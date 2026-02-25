@@ -1,0 +1,544 @@
+[
+    {
+        "id": "d2857129e0a6497a",
+        "type": "debug",
+        "z": "5166be42e3b2fa84",
+        "name": "MCP Queries",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1460,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "1ef0046d1513a9b4",
+        "type": "debug",
+        "z": "5166be42e3b2fa84",
+        "name": "MCP Responses",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1470,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "38fe9b52a80ebae2",
+        "type": "link in",
+        "z": "5166be42e3b2fa84",
+        "name": "MCP Query In",
+        "links": [
+            "62e2f310802cdc16",
+            "bb5511dff403e4e2",
+            "d0425aa828a0a99a"
+        ],
+        "x": 1325,
+        "y": 100,
+        "wires": [
+            [
+                "d2857129e0a6497a"
+            ]
+        ]
+    },
+    {
+        "id": "5988ec3ba28304f9",
+        "type": "link in",
+        "z": "5166be42e3b2fa84",
+        "name": "MCP Response In",
+        "links": [
+            "b4e71bcd9294760f",
+            "cd554c334b99bc0e"
+        ],
+        "x": 1325,
+        "y": 140,
+        "wires": [
+            [
+                "1ef0046d1513a9b4"
+            ]
+        ]
+    },
+    {
+        "id": "bc85a8e5acba5ae9",
+        "type": "group",
+        "z": "5166be42e3b2fa84",
+        "name": "[Tool] Retrieve Current Data",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "57f814a6302f380e",
+            "d304e4836ae6f74e",
+            "e384db686a093edc",
+            "b01ddd139c604c06",
+            "e90ed7483b8bbc95",
+            "bb5511dff403e4e2",
+            "b4e71bcd9294760f",
+            "42c7735f02bd6859"
+        ],
+        "x": 14,
+        "y": 19,
+        "w": 1232,
+        "h": 162
+    },
+    {
+        "id": "57f814a6302f380e",
+        "type": "mcp-tool",
+        "z": "5166be42e3b2fa84",
+        "g": "bc85a8e5acba5ae9",
+        "name": "Retrieve Data from Timeseries Database",
+        "server": "28907ed9ddcdd4b9",
+        "toolName": "get_latest_data_service",
+        "title": "Retrieve Data from Timeseries Database",
+        "description": "get_latest_data_service is an MCP-accessible retrieval tool that returns the most recent operational telemetry across all connected FlowFuse projects and remote instances, providing a unified real-time view of enterprise signals organized in a hierarchical namespace (for example enterprise/site/device/topic). \n\nWhen invoked, the tool generates a distributed query and broadcasts it to all linked runtime environments via project links, ensuring that the freshest per-topic values are collected regardless of where the data originates. \n\nA request–response correlation layer assigns each invocation a UUID, caches the originating MCP request, and merges asynchronous replies from remote instances before returning a single consolidated response to the MCP broker. \n\nThe tool is read-only, idempotent from a data-state perspective, and designed to serve as a “single source of truth” access point for AI agents and applications that need current cross-site industrial data without needing to know the physical location, protocol, or storage backend of the underlying signals.",
+        "inputSchema": "{}",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true,
+        "x": 200,
+        "y": 100,
+        "wires": [
+            [
+                "bb5511dff403e4e2",
+                "e90ed7483b8bbc95"
+            ]
+        ]
+    },
+    {
+        "id": "d304e4836ae6f74e",
+        "type": "project link in",
+        "z": "5166be42e3b2fa84",
+        "g": "bc85a8e5acba5ae9",
+        "name": "From Remote Instance",
+        "project": "all",
+        "broadcast": true,
+        "topic": "questdb-response",
+        "x": 540,
+        "y": 140,
+        "wires": [
+            [
+                "e90ed7483b8bbc95"
+            ]
+        ]
+    },
+    {
+        "id": "e384db686a093edc",
+        "type": "mcp-response",
+        "z": "5166be42e3b2fa84",
+        "g": "bc85a8e5acba5ae9",
+        "name": "",
+        "x": 1140,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "b01ddd139c604c06",
+        "type": "project link out",
+        "z": "5166be42e3b2fa84",
+        "g": "bc85a8e5acba5ae9",
+        "name": "To Remote Instance",
+        "mode": "link",
+        "broadcast": true,
+        "project": "",
+        "topic": "questdb-request",
+        "x": 1120,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "e90ed7483b8bbc95",
+        "type": "function",
+        "z": "5166be42e3b2fa84",
+        "g": "bc85a8e5acba5ae9",
+        "name": "Cache and release on reply",
+        "func": "const cache = context.get('cache') || new LRUCache.LRUCache({ max: 15000 })\ncontext.set('cache', cache)\n\nif (!msg.projectLink) { // this is the mcp msg\n    msg.uuid = crypto.randomBytes(16).toString(\"hex\");\n    cache.set(msg.uuid, msg)\n    return [msg, null]\n} else { // the project link\n    const uuid = msg.uuid\n    const originalMsg = cache.get(uuid)\n    if (originalMsg) {\n        originalMsg.payload = msg.payload\n        node.send([null, originalMsg], true)\n        cache.delete(uuid)\n    }\n    return null\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [
+            {
+                "var": "LRUCache",
+                "module": "lru-cache"
+            },
+            {
+                "var": "uuidv4",
+                "module": "uuid"
+            },
+            {
+                "var": "crypto",
+                "module": "crypto"
+            }
+        ],
+        "x": 800,
+        "y": 100,
+        "wires": [
+            [
+                "b01ddd139c604c06"
+            ],
+            [
+                "e384db686a093edc",
+                "b4e71bcd9294760f"
+            ]
+        ]
+    },
+    {
+        "id": "bb5511dff403e4e2",
+        "type": "link out",
+        "z": "5166be42e3b2fa84",
+        "g": "bc85a8e5acba5ae9",
+        "name": "MCP Query Out",
+        "mode": "link",
+        "links": [
+            "38fe9b52a80ebae2"
+        ],
+        "x": 405,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "b4e71bcd9294760f",
+        "type": "link out",
+        "z": "5166be42e3b2fa84",
+        "g": "bc85a8e5acba5ae9",
+        "name": "MCP Response Out",
+        "mode": "link",
+        "links": [
+            "5988ec3ba28304f9"
+        ],
+        "x": 965,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "42c7735f02bd6859",
+        "type": "inject",
+        "z": "5166be42e3b2fa84",
+        "g": "bc85a8e5acba5ae9",
+        "name": "Manual Trigger (Testing Only)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 520,
+        "y": 60,
+        "wires": [
+            [
+                "e90ed7483b8bbc95"
+            ]
+        ]
+    },
+    {
+        "id": "28907ed9ddcdd4b9",
+        "type": "mcp-server",
+        "name": "MCP Webinar",
+        "mcpServerTitle": "",
+        "mcpServerName": "mcp-webinar",
+        "protocol": "http",
+        "path": "/mcp-webinar",
+        "version": "1.0.0",
+        "websiteUrl": "",
+        "description": ""
+    },
+    {
+        "id": "90a4de6e2943bcde",
+        "type": "group",
+        "z": "5166be42e3b2fa84",
+        "name": "[Tool] Get Current Weather (Open-Meteo)",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "bfe40a324bc31cb1",
+            "531007f073e16247",
+            "2c7f9437ee1e23f1",
+            "6235763abc002aee",
+            "ae529e2b0440e778",
+            "62e2f310802cdc16",
+            "cd554c334b99bc0e"
+        ],
+        "x": 14,
+        "y": 299,
+        "w": 1332,
+        "h": 82
+    },
+    {
+        "id": "bfe40a324bc31cb1",
+        "type": "mcp-tool",
+        "z": "5166be42e3b2fa84",
+        "g": "90a4de6e2943bcde",
+        "name": "Get Current Weather",
+        "server": "28907ed9ddcdd4b9",
+        "toolName": "get_current_weather",
+        "title": "Get Current Weather (Open-Meteo)",
+        "description": "Fetch current weather from Open-Meteo for a named location (San Francisco, Reno, Chicago, Dallas) or for explicit latitude and longitude. Returns current conditions and a compact summary suitable for FlowFuse Expert.",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"location\": {\n      \"type\": \"string\",\n      \"description\": \"Optional named location: San Francisco, Reno, Chicago, Dallas\"\n    },\n    \"latitude\": {\n      \"type\": \"number\",\n      \"description\": \"Optional latitude in decimal degrees (example 37.7749)\"\n    },\n    \"longitude\": {\n      \"type\": \"number\",\n      \"description\": \"Optional longitude in decimal degrees (example -122.4194)\"\n    },\n    \"temperature_unit\": {\n      \"type\": \"string\",\n      \"enum\": [\"celsius\", \"fahrenheit\"],\n      \"default\": \"celsius\"\n    },\n    \"wind_speed_unit\": {\n      \"type\": \"string\",\n      \"enum\": [\"kmh\", \"ms\", \"mph\", \"kn\"],\n      \"default\": \"kmh\"\n    },\n    \"precipitation_unit\": {\n      \"type\": \"string\",\n      \"enum\": [\"mm\", \"inch\"],\n      \"default\": \"mm\"\n    },\n    \"timezone\": {\n      \"type\": \"string\",\n      \"description\": \"Timezone name, or 'auto'. Default auto.\",\n      \"default\": \"auto\"\n    }\n  },\n  \"required\": []\n}",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "x": 130,
+        "y": 340,
+        "wires": [
+            [
+                "531007f073e16247",
+                "62e2f310802cdc16"
+            ]
+        ]
+    },
+    {
+        "id": "531007f073e16247",
+        "type": "function",
+        "z": "5166be42e3b2fa84",
+        "g": "90a4de6e2943bcde",
+        "name": "Resolve coords and build Open-Meteo URL",
+        "func": "// Accept input from MCP as msg.payload (object) or msg.payload.args (some clients)\nconst args = (msg && msg.payload && typeof msg.payload === \"object\") ? msg.payload : {};\nconst a = (args && args.args && typeof args.args === \"object\") ? args.args : args;\n\nconst LOCATIONS = {\n  \"san francisco\": { name: \"San Francisco, California\", latitude: 37.7749, longitude: -122.4194 },\n  \"reno\":          { name: \"Reno, Nevada\",            latitude: 39.5299, longitude: -119.8143 },\n  \"chicago\":       { name: \"Chicago, Illinois\",       latitude: 41.8832, longitude: -87.6324 },\n  \"dallas\":        { name: \"Dallas, Texas\",           latitude: 32.7767, longitude: -96.7970 }\n};\n\nfunction norm(s) {\n  return String(s || \"\").trim().toLowerCase();\n}\n\nlet locationName = \"\";\nlet lat = a.latitude;\nlet lon = a.longitude;\n\n// Prefer explicit lat/lon if provided\nconst latNum = Number(lat);\nconst lonNum = Number(lon);\nconst hasExplicit = Number.isFinite(latNum) && Number.isFinite(lonNum);\n\nif (hasExplicit) {\n  lat = latNum;\n  lon = lonNum;\n  locationName = a.location ? String(a.location) : \"Custom Coordinates\";\n} else {\n  const key = norm(a.location);\n  const loc = LOCATIONS[key] || null;\n  if (!loc) {\n    msg.statusCode = 400;\n    msg.payload = {\n      error: \"Unknown or missing location. Provide location as one of: San Francisco, Reno, Chicago, Dallas; or provide decimal latitude and longitude.\",\n      received: a.location,\n      allowed_locations: Object.values(LOCATIONS).map(x => x.name)\n    };\n    return msg;\n  }\n  lat = loc.latitude;\n  lon = loc.longitude;\n  locationName = loc.name;\n}\n\nconst temperature_unit = (a.temperature_unit === \"fahrenheit\") ? \"fahrenheit\" : \"celsius\";\nconst wind_speed_unit = (a.wind_speed_unit === \"ms\" || a.wind_speed_unit === \"mph\" || a.wind_speed_unit === \"kn\") ? a.wind_speed_unit : \"kmh\";\nconst precipitation_unit = (a.precipitation_unit === \"inch\") ? \"inch\" : \"mm\";\nconst timezone = a.timezone ? String(a.timezone) : \"auto\";\n\n// Current variables are best for \"current weather\".\n// You can add more variables here if you want.\nconst currentVars = [\n  \"temperature_2m\",\n  \"relative_humidity_2m\",\n  \"apparent_temperature\",\n  \"precipitation\",\n  \"rain\",\n  \"showers\",\n  \"snowfall\",\n  \"weather_code\",\n  \"wind_speed_10m\",\n  \"wind_direction_10m\"\n].join(\",\");\n\nconst base = \"https://api.open-meteo.com/v1/forecast\";\nconst url = `${base}?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}`\n  + `&current=${encodeURIComponent(currentVars)}`\n  + `&temperature_unit=${encodeURIComponent(temperature_unit)}`\n  + `&wind_speed_unit=${encodeURIComponent(wind_speed_unit)}`\n  + `&precipitation_unit=${encodeURIComponent(precipitation_unit)}`\n  + `&timezone=${encodeURIComponent(timezone)}`;\n\nmsg._weather = { location: locationName, latitude: lat, longitude: lon, timezone, temperature_unit, wind_speed_unit, precipitation_unit };\nmsg.method = \"GET\";\nmsg.url = url;\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 340,
+        "wires": [
+            [
+                "2c7f9437ee1e23f1"
+            ]
+        ]
+    },
+    {
+        "id": "2c7f9437ee1e23f1",
+        "type": "http request",
+        "z": "5166be42e3b2fa84",
+        "g": "90a4de6e2943bcde",
+        "name": "Call Open-Meteo",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 770,
+        "y": 340,
+        "wires": [
+            [
+                "6235763abc002aee"
+            ]
+        ]
+    },
+    {
+        "id": "6235763abc002aee",
+        "type": "function",
+        "z": "5166be42e3b2fa84",
+        "g": "90a4de6e2943bcde",
+        "name": "Format response for MCP",
+        "func": "const meta = msg._weather || {};\n\n// If the resolver produced an error payload, pass it through\nif (msg.statusCode === 400 && msg.payload && msg.payload.error) {\n  return msg;\n}\n\nconst body = msg.payload || {};\nconst current = body.current || {};\n\n// Open-Meteo returns current_units too\nconst u = body.current_units || {};\n\nconst out = {\n  location: meta.location,\n  latitude: meta.latitude,\n  longitude: meta.longitude,\n  timezone: body.timezone || meta.timezone,\n  elevation: body.elevation,\n  generationtime_ms: body.generationtime_ms,\n  current: {\n    time: current.time,\n    temperature_2m: current.temperature_2m,\n    apparent_temperature: current.apparent_temperature,\n    relative_humidity_2m: current.relative_humidity_2m,\n    precipitation: current.precipitation,\n    rain: current.rain,\n    showers: current.showers,\n    snowfall: current.snowfall,\n    wind_speed_10m: current.wind_speed_10m,\n    wind_direction_10m: current.wind_direction_10m,\n    weather_code: current.weather_code,\n    units: {\n      temperature_2m: u.temperature_2m,\n      apparent_temperature: u.apparent_temperature,\n      relative_humidity_2m: u.relative_humidity_2m,\n      precipitation: u.precipitation,\n      rain: u.rain,\n      showers: u.showers,\n      snowfall: u.snowfall,\n      wind_speed_10m: u.wind_speed_10m,\n      wind_direction_10m: u.wind_direction_10m\n    }\n  },\n  summary: null\n};\n\nfunction safe(v) {\n  return (v === undefined || v === null) ? \"n/a\" : v;\n}\n\nout.summary = `${out.location} at ${safe(out.current.time)}: `\n  + `temp ${safe(out.current.temperature_2m)}${safe(out.current.units.temperature_2m)}, `\n  + `feels ${safe(out.current.apparent_temperature)}${safe(out.current.units.apparent_temperature)}, `\n  + `humidity ${safe(out.current.relative_humidity_2m)}${safe(out.current.units.relative_humidity_2m)}, `\n  + `wind ${safe(out.current.wind_speed_10m)}${safe(out.current.units.wind_speed_10m)} `\n  + `@ ${safe(out.current.wind_direction_10m)}${safe(out.current.units.wind_direction_10m)}, `\n  + `precip ${safe(out.current.precipitation)}${safe(out.current.units.precipitation)}, `\n  + `code ${safe(out.current.weather_code)}.`;\n\nmsg.payload = out;\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 990,
+        "y": 340,
+        "wires": [
+            [
+                "ae529e2b0440e778",
+                "cd554c334b99bc0e"
+            ]
+        ]
+    },
+    {
+        "id": "ae529e2b0440e778",
+        "type": "mcp-response",
+        "z": "5166be42e3b2fa84",
+        "g": "90a4de6e2943bcde",
+        "name": "Return to MCP",
+        "x": 1240,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "62e2f310802cdc16",
+        "type": "link out",
+        "z": "5166be42e3b2fa84",
+        "g": "90a4de6e2943bcde",
+        "name": "MCP Query Out",
+        "mode": "link",
+        "links": [
+            "38fe9b52a80ebae2"
+        ],
+        "x": 275,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "cd554c334b99bc0e",
+        "type": "link out",
+        "z": "5166be42e3b2fa84",
+        "g": "90a4de6e2943bcde",
+        "name": "MCP Response Out",
+        "mode": "link",
+        "links": [
+            "5988ec3ba28304f9"
+        ],
+        "x": 1135,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "e1a999b864d00047",
+        "type": "group",
+        "z": "5166be42e3b2fa84",
+        "name": "Site Manager Contacts",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "2a7251c7385d7bf2",
+            "6bd6a597602b3f60",
+            "dd7d45f15a1d90b8",
+            "d0425aa828a0a99a"
+        ],
+        "x": 14,
+        "y": 199,
+        "w": 612,
+        "h": 82
+    },
+    {
+        "id": "2a7251c7385d7bf2",
+        "type": "mcp-resource",
+        "z": "5166be42e3b2fa84",
+        "g": "e1a999b864d00047",
+        "name": "Site Managers",
+        "server": "28907ed9ddcdd4b9",
+        "resourceUri": "db://site_managers",
+        "resourceId": "site_managers",
+        "title": "Site Managers",
+        "description": "A database of site managers.",
+        "mimeType": "text/plain",
+        "x": 110,
+        "y": 240,
+        "wires": [
+            [
+                "6bd6a597602b3f60",
+                "d0425aa828a0a99a"
+            ]
+        ]
+    },
+    {
+        "id": "6bd6a597602b3f60",
+        "type": "template",
+        "z": "5166be42e3b2fa84",
+        "g": "e1a999b864d00047",
+        "name": "Site Managers",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "json",
+        "syntax": "mustache",
+        "template": "{\n  \"site_managers\": [\n    {\n      \"name\": \"Dennis Sandoval\",\n      \"phoneNumber\": \"1-555-034-2842\",\n      \"siteManaged\": \"Site-1\"\n    }\n  ]\n}",
+        "output": "str",
+        "x": 340,
+        "y": 240,
+        "wires": [
+            [
+                "dd7d45f15a1d90b8"
+            ]
+        ]
+    },
+    {
+        "id": "dd7d45f15a1d90b8",
+        "type": "mcp-response",
+        "z": "5166be42e3b2fa84",
+        "g": "e1a999b864d00047",
+        "name": "Return to MCP",
+        "x": 520,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "d0425aa828a0a99a",
+        "type": "link out",
+        "z": "5166be42e3b2fa84",
+        "g": "e1a999b864d00047",
+        "name": "MCP Query Out",
+        "mode": "link",
+        "links": [
+            "38fe9b52a80ebae2"
+        ],
+        "x": 225,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "8be07bd34d369499",
+        "type": "group",
+        "z": "5166be42e3b2fa84",
+        "name": "Site Manager Message",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "601559e17f8ec471"
+        ],
+        "x": 14,
+        "y": 399,
+        "w": 252,
+        "h": 82
+    },
+    {
+        "id": "601559e17f8ec471",
+        "type": "mcp-prompt",
+        "z": "5166be42e3b2fa84",
+        "g": "8be07bd34d369499",
+        "name": "Site Manager Message",
+        "server": "28907ed9ddcdd4b9",
+        "promptId": "site_manager_message",
+        "title": "Site Manager Message",
+        "description": "A prompt that allows the agent to create a message to the site manager.",
+        "template": "You are writing a letter to ask a site manager to check on a site. {{sitemanagername}} is the name of the manager of this site. Be formal but polite.",
+        "arguments": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"sitemanagername\": {\n      \"type\": \"string\",\n      \"description\": \"The name of the site manager\"\n    }\n  },\n  \"required\": [\n    \"sitemanagername\"\n  ]\n}",
+        "x": 140,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "03f9d3e608b3de19",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse-nodes/nr-mcp-server-nodes": "0.3.0",
+            "@flowfuse/nr-project-nodes": "0.7.8"
+        }
+    }
+]
