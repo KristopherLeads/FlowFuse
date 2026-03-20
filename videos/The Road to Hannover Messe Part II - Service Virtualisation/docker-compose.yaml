@@ -1,0 +1,16 @@
+## Example docker-compose.yaml
+name: Stack Name
+
+services:
+  Local-instance-name:
+Image: flowfuse/device-agent:latest
+  container_name: your-container-name
+restart: unless-stopped
+volumes:
+  - ./device.yml:/opt/flowfuse-device/device.yml:ro
+networks:
+  - your-local-network
+
+networks:
+  your-local-network
+    external: true
