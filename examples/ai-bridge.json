@@ -1,0 +1,236 @@
+[
+    {
+        "id": "2764fbd5721b4c76",
+        "type": "tab",
+        "label": "AI Bridge",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "af3eb4082713c051",
+        "type": "inject",
+        "z": "2764fbd5721b4c76",
+        "name": "Simulated Message",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "messages",
+        "payload": "Say hello if you can see this!",
+        "payloadType": "str",
+        "x": 150,
+        "y": 40,
+        "wires": [
+            [
+                "67fd45a8ef72413a",
+                "123cb6fd8c40a2d8",
+                "93394cb292dd4fab"
+            ]
+        ]
+    },
+    {
+        "id": "67fd45a8ef72413a",
+        "type": "link out",
+        "z": "2764fbd5721b4c76",
+        "name": "MCP Request Out",
+        "mode": "link",
+        "links": [
+            "be25e84f235c42b0"
+        ],
+        "x": 375,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "be25e84f235c42b0",
+        "type": "link in",
+        "z": "2764fbd5721b4c76",
+        "name": "MCP Request In",
+        "links": [
+            "67fd45a8ef72413a"
+        ],
+        "x": 55,
+        "y": 180,
+        "wires": [
+            [
+                "7e377c276cc03f84"
+            ]
+        ]
+    },
+    {
+        "id": "7e377c276cc03f84",
+        "type": "debug",
+        "z": "2764fbd5721b4c76",
+        "name": "MCP Request",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 180,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "123cb6fd8c40a2d8",
+        "type": "function",
+        "z": "2764fbd5721b4c76",
+        "name": "Cache and Release",
+        "func": "const cache = context.get('cache') || new LRUCache.LRUCache({ max: 15000 })\ncontext.set('cache', cache)\n\nif (!msg.projectLink) { // this is the mcp msg\n    msg.uuid = crypto.randomBytes(16).toString(\"hex\");\n    cache.set(msg.uuid, msg)\n    return [msg, null]\n} else { // the project link\n    const uuid = msg.uuid\n    const originalMsg = cache.get(uuid)\n    if (originalMsg) {\n        originalMsg.payload = msg.payload\n        node.send([null, originalMsg], true)\n        cache.delete(uuid)\n    }\n    return null\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [
+            {
+                "var": "LRUCache",
+                "module": "lru-cache"
+            },
+            {
+                "var": "uuidv4",
+                "module": "uuid"
+            },
+            {
+                "var": "crypto",
+                "module": "crypto"
+            }
+        ],
+        "x": 450,
+        "y": 80,
+        "wires": [
+            [
+                "23daa4584e063713"
+            ],
+            [
+                "7d84f6459af2efd9"
+            ]
+        ]
+    },
+    {
+        "id": "392382add3ff7424",
+        "type": "link in",
+        "z": "2764fbd5721b4c76",
+        "name": "MCP Response In",
+        "links": [
+            "7d84f6459af2efd9"
+        ],
+        "x": 55,
+        "y": 220,
+        "wires": [
+            [
+                "462d6b204935bc42"
+            ]
+        ]
+    },
+    {
+        "id": "462d6b204935bc42",
+        "type": "debug",
+        "z": "2764fbd5721b4c76",
+        "name": "MCP Response",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 180,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "7d84f6459af2efd9",
+        "type": "link out",
+        "z": "2764fbd5721b4c76",
+        "name": "MCP Reponse Out",
+        "mode": "link",
+        "links": [
+            "392382add3ff7424"
+        ],
+        "x": 595,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "23daa4584e063713",
+        "type": "project link out",
+        "z": "2764fbd5721b4c76",
+        "name": "Send Request Out",
+        "mode": "link",
+        "broadcast": true,
+        "project": "",
+        "topic": "requestOrigination",
+        "x": 670,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "72274637865a9eea",
+        "type": "project link in",
+        "z": "2764fbd5721b4c76",
+        "name": "project in 1",
+        "project": "all",
+        "broadcast": true,
+        "topic": "requestResponse",
+        "x": 180,
+        "y": 80,
+        "wires": [
+            [
+                "123cb6fd8c40a2d8"
+            ]
+        ]
+    },
+    {
+        "id": "93394cb292dd4fab",
+        "type": "ff-ai-openai",
+        "z": "2764fbd5721b4c76",
+        "d": true,
+        "name": "",
+        "apiKeyEnv": "OPENAI_API_KEY",
+        "apiKeyEnvType": "env",
+        "model": "gpt-4.1-mini",
+        "modelType": "str",
+        "temperature": "0.7",
+        "temperatureType": "num",
+        "maxTokens": "1024",
+        "maxTokensType": "num",
+        "timeoutMs": "30000",
+        "timeoutMsType": "num",
+        "system": "",
+        "systemType": "str",
+        "organization": "",
+        "project": "",
+        "sendClientRequestId": false,
+        "x": 410,
+        "y": 120,
+        "wires": [
+            [
+                "7d84f6459af2efd9"
+            ]
+        ]
+    },
+    {
+        "id": "90549d56063085d8",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/nr-project-nodes": "0.7.8",
+            "@flowfuse-nodes/nr-ai-nodes": "0.2.0"
+        }
+    }
+]
