@@ -1,0 +1,223 @@
+[
+    {
+        "id": "ca2b4a9b06aaec47",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "b7e4402e4cf43d40",
+        "type": "mcp-server",
+        "name": "Core Validator",
+        "mcpServerTitle": "",
+        "mcpServerName": "core-validator",
+        "protocol": "http",
+        "path": "/mcp",
+        "version": "1.0.0",
+        "websiteUrl": "",
+        "description": "This is a server for linting and validating code."
+    },
+    {
+        "id": "60684c16a244dce8",
+        "type": "mcp-tool",
+        "z": "ca2b4a9b06aaec47",
+        "name": "JavaScript Linter",
+        "server": "b7e4402e4cf43d40",
+        "toolName": "lint_javascript",
+        "title": "Javascript Linter",
+        "description": "Use this only for raw JavaScript source code. Do NOT use for Node-RED flow JSON exports - use validate_flow for those.",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"code\": {\n      \"type\": \"string\",\n      \"description\": \"The JavaScript source code to lint\",\n      \"minLength\": 1\n    },\n    \"strict\": {\n      \"type\": \"boolean\",\n      \"description\": \"Enable stricter rules (no-console, eqeqeq as errors)\"\n    }\n  },\n  \"required\": [\n    \"code\"\n  ]\n}",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "_meta": "",
+        "x": 120,
+        "y": 60,
+        "wires": [
+            [
+                "9c4cf9fb09247586"
+            ]
+        ]
+    },
+    {
+        "id": "9c4cf9fb09247586",
+        "type": "function",
+        "z": "ca2b4a9b06aaec47",
+        "name": "Run ESLint",
+        "func": "const { Linter } = eslint;\nconst linter = new Linter();\n\nconst strict = msg.payload.strict === true;\n\nconst results = linter.verify(msg.payload.code, {\n    languageOptions: { ecmaVersion: 2022, sourceType: \"script\" },\n    rules: {\n        \"no-undef\": \"off\",\n        \"no-unused-vars\": \"off\", \n        \"no-redeclare\": \"error\",\n        \"no-dupe-keys\": \"error\",\n        \"no-unreachable\": \"error\",\n        \"eqeqeq\": strict ? \"error\" : \"warn\",\n        \"no-console\": strict ? \"error\" : \"off\",\n        \"semi\": \"warn\"\n    }\n});\n\nmsg.payload = {\n    problemCount: results.length,\n    errors: results.filter(r => r.severity === 2).length,\n    warnings: results.filter(r => r.severity === 1).length,\n    problems: results.map(r => ({\n        line: r.line,\n        column: r.column,\n        severity: r.severity === 2 ? \"error\" : \"warning\",\n        rule: r.ruleId,\n        message: r.message\n    }))\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [
+            {
+                "var": "eslint",
+                "module": "eslint"
+            }
+        ],
+        "x": 290,
+        "y": 60,
+        "wires": [
+            [
+                "686ac59f8b01ff3c"
+            ]
+        ]
+    },
+    {
+        "id": "686ac59f8b01ff3c",
+        "type": "mcp-response",
+        "z": "ca2b4a9b06aaec47",
+        "name": "Return Lint State",
+        "x": 470,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "5894f94e300ff82c",
+        "type": "inject",
+        "z": "ca2b4a9b06aaec47",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 100,
+        "y": 160,
+        "wires": [
+            [
+                "07d2151d67dd474d"
+            ]
+        ]
+    },
+    {
+        "id": "07d2151d67dd474d",
+        "type": "function",
+        "z": "ca2b4a9b06aaec47",
+        "name": "Broken Code",
+        "func": "var config = { retries: 3, timeout: 500, mode: \"fast\" };\n\nfunction checkTemp(reading) {\n    if (reading === null) {\n        return false;\n    }\n    return reading > 75;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 250,
+        "y": 160,
+        "wires": [
+            [
+                "08555cb776aaa18e"
+            ]
+        ]
+    },
+    {
+        "id": "08555cb776aaa18e",
+        "type": "debug",
+        "z": "ca2b4a9b06aaec47",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "8a13837b3b28ead5",
+        "type": "mcp-tool",
+        "z": "ca2b4a9b06aaec47",
+        "name": "Validate Flow",
+        "server": "b7e4402e4cf43d40",
+        "toolName": "validate_flow",
+        "title": "",
+        "description": "Use this for Node-RED flow JSON - an array of node objects exported from the editor (contains \"id\", \"type\", \"wires\" fields). Checks flow-level best practices: error handling, node naming, hardcoded credentials. Do NOT use for raw JavaScript source.",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"flow\": {\n      \"type\": \"string\",\n      \"description\": \"The exported flow JSON to validate\"\n    }\n  },\n  \"required\": [\"flow\"]\n}",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "_meta": "",
+        "x": 130,
+        "y": 260,
+        "wires": [
+            [
+                "817fe48cf0673697"
+            ]
+        ]
+    },
+    {
+        "id": "817fe48cf0673697",
+        "type": "function",
+        "z": "ca2b4a9b06aaec47",
+        "name": "Validate Code",
+        "func": "const nodes = JSON.parse(msg.payload.flow);\nconst issues = [];\n\nconst hasCatch = nodes.some(n => n.type === \"catch\");\nif (!hasCatch) {\n    issues.push({\n        severity: \"warning\", rule: \"missing-catch\",\n        message: \"Flow has no Catch node. Errors will go unhandled.\"\n    });\n}\n\nfor (const n of nodes) {\n    if (n.type === \"function\") {\n        if (!n.name) {\n            issues.push({\n                severity: \"warning\", rule: \"unnamed-function\",\n                node: n.id, message: \"Function node has no name.\"\n            });\n        }\n        if (n.func && /(password|apikey|api_key|secret|token)\\s*[:=]\\s*[\"'][^\"']+[\"']/i.test(n.func)) {\n            issues.push({\n                severity: \"error\", rule: \"hardcoded-credential\",\n                node: n.id, name: n.name || \"(unnamed)\",\n                message: \"Possible hardcoded credential in Function code. Use environment variables.\"\n            });\n        }\n    }\n}\n\nmsg.payload = { valid: issues.filter(i => i.severity === \"error\").length === 0, issues };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 300,
+        "y": 260,
+        "wires": [
+            [
+                "d6cdcaaa870efe97"
+            ]
+        ]
+    },
+    {
+        "id": "d6cdcaaa870efe97",
+        "type": "mcp-response",
+        "z": "ca2b4a9b06aaec47",
+        "name": "Return Validation",
+        "x": 490,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "2b527480bcd4f0c2",
+        "type": "function",
+        "z": "ca2b4a9b06aaec47",
+        "name": "function 1",
+        "func": "const apiKey = \"sk-12345\";",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 280,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a89ccface2d643e6",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse-nodes/nr-mcp-server-nodes": "0.5.0"
+        }
+    }
+]
