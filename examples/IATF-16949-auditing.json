@@ -1,0 +1,1614 @@
+[
+    {
+        "id": "d5b5487625cf908c",
+        "type": "tab",
+        "label": "01 · Line 3 – Traceability Records",
+        "disabled": false,
+        "info": "Line 3 builds electric water pump assemblies (EWP-2201-A / -B) through four stations:\n\nOP10 Rotor press (press force, kN)\nOP20 Housing torque (Nm)\nOP30 Leak test (sccm)\nOP40 End-of-line performance (flow, l/min)\n\nEvery station event becomes ONE standardised traceability record in FlowFuse Tables:\nwho (operator, shift), what (serial, part, work order), how (measurement vs. spec),\nwith what (material lot -> supplier heat number & cert), measured by what (gauge + cal due date).\n\nThat single record shape is what makes audit evidence a query instead of a project\n(IATF 16949: 8.5.2 identification & traceability, 7.1.5 measurement traceability, 10.2 nonconformity).\n\nThe simulator stands in for your real line - swap it for OPC UA / Modbus / MQTT / REST\nnodes and keep everything downstream unchanged."
+    },
+    {
+        "id": "f965f2b01599455d",
+        "type": "tab",
+        "label": "02 · Audit Evidence Dashboard",
+        "disabled": false,
+        "info": "Audit Evidence dashboard (Dashboard 2.0)\n\n- Topline tiles: the numbers a lead auditor asks for first\n- Serial lookup: type any serial -> full unit history with material genealogy\n  and gauge calibration status\n- FPY trend + open NC log\n- CSV export for evidence sampling\n\nOpen it at <instance-url>/dashboard"
+    },
+    {
+        "id": "ff.line3.tab.mcp",
+        "type": "tab",
+        "label": "03 · Audit Evidence MCP Server",
+        "disabled": false,
+        "info": "Line 3 Audit Evidence MCP Server\n================================\n\nRequires:\n- FlowFuse Enterprise instance (same instance as the Line 3 traceability flow,\n  so the Tables query nodes hit the same database)\n- Palette package: @flowfuse-nodes/nr-mcp-server-nodes\n- @flowfuse/nr-tables-nodes (pre-installed on FlowFuse Cloud)\n\nConnect a client\n----------------\nThe server listens at:  <instance-url>/mcp   (http/sse)\n\nSecure it first: Instance Settings -> Security -> FlowFuse User Authentication,\nthen create a token and connect with:\n\n{\n  \"line3-audit-evidence\": {\n    \"url\": \"https://<instance>.flowfuse.cloud/mcp\",\n    \"type\": \"http\",\n    \"headers\": { \"Authorization\": \"Bearer ffhttp_xxxxxxxx\" }\n  }\n}\n\nOr skip external clients entirely: FlowFuse Expert discovers this server from\nthe Insights tab and can call every tool from chat.\n\nIMPORTANT: open each MCP Tool node and tick the \"Read-Only Hint\" annotation.\nAll five tools only read data; the annotation lets Viewers use them under\nFlowFuse RBAC. (Annotations are set in the node's edit dialog.)\n\nQuestions this server answers\n-----------------------------\n- \"Pull the full genealogy for serial EWP2201A-260714-00123\"\n- \"Topline audit stats for the last 7 days\"\n- \"Any open leak-test nonconformances this week?\"\n- \"Which units contain material lot LOT-B-2211, and did any fail?\"\n- \"Show FPY by part and day for the last 14 days\" "
+    },
+    {
+        "id": "ui.theme",
+        "type": "ui-theme",
+        "name": "FlowFuse Theme",
+        "colors": {
+            "surface": "#4a4a4a",
+            "primary": "#ffffff",
+            "bgPage": "#474747",
+            "groupBg": "#ffffff",
+            "groupOutline": "#fff04d"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "ui.base",
+        "type": "ui-base",
+        "name": "Line 3 Operations",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "default",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 5,
+        "showDisconnectNotification": true,
+        "allowInstall": true
+    },
+    {
+        "id": "ui.page",
+        "type": "ui-page",
+        "name": "Audit Evidence",
+        "ui": "ui.base",
+        "path": "/audit-evidence",
+        "icon": "clipboard-check",
+        "layout": "grid",
+        "theme": "ui.theme",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "grp.topline",
+        "type": "ui-group",
+        "name": "Topline — last 24 hours",
+        "page": "ui.page",
+        "width": "12",
+        "height": "1",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "grp.lookup",
+        "type": "ui-group",
+        "name": "Evidence lookup — any serial, full genealogy",
+        "page": "ui.page",
+        "width": "12",
+        "height": "8",
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "grp.fpy",
+        "type": "ui-group",
+        "name": "First pass yield",
+        "page": "ui.page",
+        "width": "6",
+        "height": "1",
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "grp.ncs",
+        "type": "ui-group",
+        "name": "Nonconformances",
+        "page": "ui.page",
+        "width": "6",
+        "height": "8",
+        "order": 4,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "5fc992c78ba4e7eb",
+        "type": "mcp-server",
+        "name": "Auditing Server",
+        "mcpServerTitle": "",
+        "mcpServerName": "auditing-server",
+        "protocol": "http",
+        "path": "/mcp",
+        "version": "1.0.0",
+        "websiteUrl": "",
+        "description": ""
+    },
+    {
+        "id": "2db65508e3b9110c",
+        "type": "inject",
+        "z": "d5b5487625cf908c",
+        "name": "On deploy → create tables & seed lots",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 210,
+        "y": 40,
+        "wires": [
+            [
+                "fea0c3c882a328a3"
+            ]
+        ]
+    },
+    {
+        "id": "fea0c3c882a328a3",
+        "type": "tables-query",
+        "z": "d5b5487625cf908c",
+        "name": "DDL + seed material lots",
+        "query": "-- One-off setup: schema + incoming material lots (safe to re-run)\nCREATE TABLE IF NOT EXISTS material_lots (\n  lot_id         TEXT PRIMARY KEY,\n  part_family    TEXT NOT NULL,\n  supplier       TEXT NOT NULL,\n  heat_number    TEXT NOT NULL,\n  cert_reference TEXT NOT NULL,\n  received_at    TIMESTAMPTZ NOT NULL\n);\n\nCREATE TABLE IF NOT EXISTS process_events (\n  id                BIGSERIAL PRIMARY KEY,\n  ts                TIMESTAMPTZ NOT NULL,\n  serial_number     TEXT NOT NULL,\n  part_number       TEXT NOT NULL,\n  work_order        TEXT NOT NULL,\n  station           TEXT NOT NULL,\n  operation         TEXT NOT NULL,\n  operator_id       TEXT NOT NULL,\n  shift             TEXT NOT NULL,\n  material_lot      TEXT NOT NULL,\n  gauge_id          TEXT NOT NULL,\n  gauge_cal_due     DATE NOT NULL,\n  measurement_name  TEXT NOT NULL,\n  measurement_value NUMERIC(10,3) NOT NULL,\n  lsl               NUMERIC(10,3),\n  usl               NUMERIC(10,3),\n  result            TEXT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_pe_serial ON process_events (serial_number);\nCREATE INDEX IF NOT EXISTS idx_pe_ts     ON process_events (ts);\n\nCREATE TABLE IF NOT EXISTS quality_events (\n  id          BIGSERIAL PRIMARY KEY,\n  ts          TIMESTAMPTZ NOT NULL,\n  serial_number TEXT NOT NULL,\n  station     TEXT NOT NULL,\n  defect_code TEXT NOT NULL,\n  description TEXT NOT NULL,\n  disposition TEXT NOT NULL,\n  status      TEXT NOT NULL\n);\n\nINSERT INTO material_lots (lot_id, part_family, supplier, heat_number, cert_reference, received_at) VALUES\n ('LOT-A-1042','EWP-2201-A','NordAlu AS','H-77812','CERT-2026-0455','2026-07-06'),\n ('LOT-A-1043','EWP-2201-A','NordAlu AS','H-77958','CERT-2026-0471','2026-07-09'),\n ('LOT-A-1044','EWP-2201-A','NordAlu AS','H-78102','CERT-2026-0488','2026-07-12'),\n ('LOT-B-2210','EWP-2201-B','Steelcorp GmbH','S-33401','CERT-2026-1120','2026-07-05'),\n ('LOT-B-2211','EWP-2201-B','Steelcorp GmbH','S-33477','CERT-2026-1134','2026-07-08'),\n ('LOT-B-2212','EWP-2201-B','Steelcorp GmbH','S-33519','CERT-2026-1149','2026-07-11')\nON CONFLICT (lot_id) DO NOTHING;",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 490,
+        "y": 40,
+        "wires": [
+            [
+                "cb54d9b9a5223237"
+            ]
+        ]
+    },
+    {
+        "id": "cb54d9b9a5223237",
+        "type": "debug",
+        "z": "d5b5487625cf908c",
+        "name": "DB ready",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "'tables ready'",
+        "targetType": "jsonata",
+        "statusVal": "'tables ready'",
+        "statusType": "auto",
+        "x": 680,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "3a906532f6244ef8",
+        "type": "inject",
+        "z": "d5b5487625cf908c",
+        "name": "Every 4 s → next unit",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "4",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 100,
+        "wires": [
+            [
+                "b086d0a1f8f20cf8"
+            ]
+        ]
+    },
+    {
+        "id": "b086d0a1f8f20cf8",
+        "type": "function",
+        "z": "d5b5487625cf908c",
+        "name": "Simulate unit through OP10–OP40",
+        "func": "// Simulates one unit travelling down Line 3.\n// In production, replace this with your PLC / MES / test-rig\n// connections (OPC UA, Modbus, MQTT, REST...) - the record\n// format stays exactly the same.\nfunction gauss() {\n    let u = 0, v = 0;\n    while (!u) u = Math.random();\n    while (!v) v = Math.random();\n    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);\n}\n\nconst PARTS = [\n    { pn: 'EWP-2201-A', lots: ['LOT-A-1042', 'LOT-A-1043', 'LOT-A-1044'] },\n    { pn: 'EWP-2201-B', lots: ['LOT-B-2210', 'LOT-B-2211', 'LOT-B-2212'] }\n];\n\nconst STATIONS = [\n    { station: 'OP10', operation: 'Rotor press',     gauge: 'PRS-010', calDue: '2026-11-30', m: 'press_force_kn', nom: 8.5,  lsl: 7.5,  usl: 9.5,  sd: 0.32, pFail: 0.004 },\n    { station: 'OP20', operation: 'Housing torque',  gauge: 'TQW-020', calDue: '2026-08-02', m: 'torque_nm',      nom: 12.0, lsl: 10.8, usl: 13.2, sd: 0.42, pFail: 0.007 },\n    { station: 'OP30', operation: 'Leak test',       gauge: 'LKT-030', calDue: '2026-09-15', m: 'leak_rate_sccm', nom: 1.2,  lsl: 0.0,  usl: 3.0,  sd: 0.50, pFail: 0.020 },\n    { station: 'OP40', operation: 'EOL performance', gauge: 'EOL-040', calDue: '2027-01-20', m: 'flow_rate_lpm',  nom: 21.0, lsl: 19.0, usl: 23.0, sd: 0.60, pFail: 0.006 }\n];\n\nconst DEFECTS = {\n    OP10: ['PRS-01', 'Press force outside specification'],\n    OP20: ['TRQ-02', 'Housing bolt torque outside specification'],\n    OP30: ['LEAK-01', 'Leak rate above upper limit'],\n    OP40: ['EOL-03', 'Flow performance outside specification']\n};\n\nconst ROSTER = { A: ['OP-114', 'OP-127', 'OP-133'], B: ['OP-208', 'OP-214', 'OP-221'], C: ['OP-301', 'OP-322'] };\n\nconst now = new Date();\nconst hour = now.getHours();\nconst shift = (hour >= 6 && hour < 14) ? 'A' : (hour >= 14 && hour < 22) ? 'B' : 'C';\nconst ops = ROSTER[shift];\n\nconst n = (context.get('unitCount') || 0) + 1;\ncontext.set('unitCount', n);\n\nconst part = PARTS[n % PARTS.length];\nconst ymd = now.toISOString().slice(2, 10).replace(/-/g, '');\nconst serial = part.pn.replace(/-/g, '') + '-' + ymd + '-' + String(n).padStart(5, '0');\nconst workOrder = 'WO-' + ymd + '-' + shift + '-' + part.pn.slice(-1);\nconst lot = part.lots[Math.floor(n / 40) % part.lots.length];\nconst operator = ops[n % ops.length];\n\nconst events = [];\nlet ncMsg = null;\n\nfor (let i = 0; i < STATIONS.length; i++) {\n    const s = STATIONS[i];\n    // Unit moved down the line over the last ~3 minutes\n    const ts = new Date(now.getTime() - (STATIONS.length - 1 - i) * 45000).toISOString();\n\n    let value = s.nom + gauss() * s.sd;\n    if (Math.random() < s.pFail) {\n        value = (s.lsl > 0 && Math.random() < 0.4)\n            ? s.lsl - (0.1 + Math.random() * 0.4)\n            : s.usl + (0.1 + Math.random() * 0.5);\n    }\n    value = Math.round(value * 1000) / 1000;\n    const pass = value >= s.lsl && value <= s.usl;\n\n    events.push({\n        queryParameters: {\n            ts, serial, part: part.pn, wo: workOrder,\n            station: s.station, operation: s.operation,\n            operator, shift, lot,\n            gauge: s.gauge, cal_due: s.calDue,\n            mname: s.m, mvalue: value, lsl: s.lsl, usl: s.usl,\n            result: pass ? 'PASS' : 'FAIL'\n        }\n    });\n\n    if (!pass) {\n        const d = DEFECTS[s.station];\n        const closed = Math.random() < 0.5;\n        ncMsg = {\n            queryParameters: {\n                ts, serial, station: s.station,\n                code: d[0], descr: d[1],\n                dispo: closed ? 'Reworked and retested' : 'Contained - MRB review',\n                status: closed ? 'closed' : 'open'\n            }\n        };\n        break; // unit is pulled from the line\n    }\n}\n\nnode.status({ fill: ncMsg ? 'red' : 'green', shape: 'dot', text: serial + (ncMsg ? ' FAIL' : ' PASS') });\nreturn [events, ncMsg ? [ncMsg] : []];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 100,
+        "wires": [
+            [
+                "c83f882be9024988",
+                "0bc2f10466e9101b"
+            ],
+            [
+                "e2d4135486d2bd8a",
+                "0bc2f10466e9101b"
+            ]
+        ]
+    },
+    {
+        "id": "c83f882be9024988",
+        "type": "tables-query",
+        "z": "d5b5487625cf908c",
+        "name": "INSERT process_events",
+        "query": "INSERT INTO process_events\n (ts, serial_number, part_number, work_order, station, operation, operator_id,\n  shift, material_lot, gauge_id, gauge_cal_due, measurement_name,\n  measurement_value, lsl, usl, result)\nVALUES\n ($ts, $serial, $part, $wo, $station, $operation, $operator,\n  $shift, $lot, $gauge, $cal_due, $mname,\n  $mvalue, $lsl, $usl, $result);",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 710,
+        "y": 100,
+        "wires": [
+            [
+                "7567bf2b411ee3ae"
+            ]
+        ]
+    },
+    {
+        "id": "e2d4135486d2bd8a",
+        "type": "tables-query",
+        "z": "d5b5487625cf908c",
+        "name": "INSERT quality_events",
+        "query": "INSERT INTO quality_events\n (ts, serial_number, station, defect_code, description, disposition, status)\nVALUES\n ($ts, $serial, $station, $code, $descr, $dispo, $status);",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 700,
+        "y": 160,
+        "wires": [
+            [
+                "1a82673b72d225d0"
+            ]
+        ]
+    },
+    {
+        "id": "7567bf2b411ee3ae",
+        "type": "debug",
+        "z": "d5b5487625cf908c",
+        "name": "event stored",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "pgsql",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 910,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "1a82673b72d225d0",
+        "type": "debug",
+        "z": "d5b5487625cf908c",
+        "name": "NC stored",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "pgsql",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 910,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "a2ee1fac8ae1f253",
+        "type": "inject",
+        "z": "d5b5487625cf908c",
+        "name": "Click → backfill ~24 h of history",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 220,
+        "wires": [
+            [
+                "4f21aa9c7fbad23c"
+            ]
+        ]
+    },
+    {
+        "id": "4f21aa9c7fbad23c",
+        "type": "function",
+        "z": "d5b5487625cf908c",
+        "name": "Build 450 historical units",
+        "func": "// One-click backfill: seeds ~24 h of history so the stats,\n// chart and tables look realistic straight away. Safe to re-run\n// (each run adds another batch with unique serials).\nfunction gauss() {\n    let u = 0, v = 0;\n    while (!u) u = Math.random();\n    while (!v) v = Math.random();\n    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);\n}\n\nconst PARTS = [\n    { pn: 'EWP-2201-A', lots: ['LOT-A-1042', 'LOT-A-1043', 'LOT-A-1044'] },\n    { pn: 'EWP-2201-B', lots: ['LOT-B-2210', 'LOT-B-2211', 'LOT-B-2212'] }\n];\nconst STATIONS = [\n    { station: 'OP10', operation: 'Rotor press',     gauge: 'PRS-010', calDue: '2026-11-30', m: 'press_force_kn', nom: 8.5,  lsl: 7.5,  usl: 9.5,  sd: 0.32, pFail: 0.004 },\n    { station: 'OP20', operation: 'Housing torque',  gauge: 'TQW-020', calDue: '2026-08-02', m: 'torque_nm',      nom: 12.0, lsl: 10.8, usl: 13.2, sd: 0.42, pFail: 0.007 },\n    { station: 'OP30', operation: 'Leak test',       gauge: 'LKT-030', calDue: '2026-09-15', m: 'leak_rate_sccm', nom: 1.2,  lsl: 0.0,  usl: 3.0,  sd: 0.50, pFail: 0.020 },\n    { station: 'OP40', operation: 'EOL performance', gauge: 'EOL-040', calDue: '2027-01-20', m: 'flow_rate_lpm',  nom: 21.0, lsl: 19.0, usl: 23.0, sd: 0.60, pFail: 0.006 }\n];\nconst DEFECTS = {\n    OP10: ['PRS-01', 'Press force outside specification'],\n    OP20: ['TRQ-02', 'Housing bolt torque outside specification'],\n    OP30: ['LEAK-01', 'Leak rate above upper limit'],\n    OP40: ['EOL-03', 'Flow performance outside specification']\n};\nconst ROSTER = { A: ['OP-114', 'OP-127', 'OP-133'], B: ['OP-208', 'OP-214', 'OP-221'], C: ['OP-301', 'OP-322'] };\n\nconst q = v => \"'\" + String(v).replace(/'/g, \"''\") + \"'\";\nconst nowMs = Date.now();\nconst peRows = [];\nconst qeRows = [];\nlet count = context.get('backfillCount') || 0;\nconst UNITS = 450;\n\nfor (let u = 0; u < UNITS; u++) {\n    count++;\n    const born = nowMs - Math.floor(Math.random() * 24 * 3600 * 1000);\n    const d = new Date(born);\n    const hour = d.getHours();\n    const shift = (hour >= 6 && hour < 14) ? 'A' : (hour >= 14 && hour < 22) ? 'B' : 'C';\n    const ops = ROSTER[shift];\n    const part = PARTS[count % PARTS.length];\n    const ymd = d.toISOString().slice(2, 10).replace(/-/g, '');\n    const serial = part.pn.replace(/-/g, '') + '-' + ymd + '-B' + String(count).padStart(5, '0');\n    const workOrder = 'WO-' + ymd + '-' + shift + '-' + part.pn.slice(-1);\n    const lot = part.lots[Math.floor(count / 40) % part.lots.length];\n    const operator = ops[count % ops.length];\n\n    for (let i = 0; i < STATIONS.length; i++) {\n        const s = STATIONS[i];\n        const ts = new Date(born + i * 45000).toISOString();\n        let value = s.nom + gauss() * s.sd;\n        if (Math.random() < s.pFail) {\n            value = (s.lsl > 0 && Math.random() < 0.4)\n                ? s.lsl - (0.1 + Math.random() * 0.4)\n                : s.usl + (0.1 + Math.random() * 0.5);\n        }\n        value = Math.round(value * 1000) / 1000;\n        const pass = value >= s.lsl && value <= s.usl;\n\n        peRows.push('(' + [q(ts), q(serial), q(part.pn), q(workOrder), q(s.station), q(s.operation),\n            q(operator), q(shift), q(lot), q(s.gauge), q(s.calDue), q(s.m),\n            value, s.lsl, s.usl, q(pass ? 'PASS' : 'FAIL')].join(',') + ')');\n\n        if (!pass) {\n            const def = DEFECTS[s.station];\n            const closed = Math.random() < 0.5;\n            qeRows.push('(' + [q(ts), q(serial), q(s.station), q(def[0]), q(def[1]),\n                q(closed ? 'Reworked and retested' : 'Contained - MRB review'),\n                q(closed ? 'closed' : 'open')].join(',') + ')');\n            break;\n        }\n    }\n}\ncontext.set('backfillCount', count);\n\nconst msgs = [];\nconst CHUNK = 200;\nconst PE_COLS = '(ts, serial_number, part_number, work_order, station, operation, operator_id, shift, material_lot, gauge_id, gauge_cal_due, measurement_name, measurement_value, lsl, usl, result)';\nfor (let i = 0; i < peRows.length; i += CHUNK) {\n    msgs.push({ query: 'INSERT INTO process_events ' + PE_COLS + ' VALUES ' + peRows.slice(i, i + CHUNK).join(',') + ';' });\n}\nif (qeRows.length) {\n    msgs.push({ query: 'INSERT INTO quality_events (ts, serial_number, station, defect_code, description, disposition, status) VALUES ' + qeRows.join(',') + ';' });\n}\nnode.status({ fill: 'blue', shape: 'dot', text: UNITS + ' units backfilled (' + qeRows.length + ' NCs)' });\nreturn [msgs];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 220,
+        "wires": [
+            [
+                "1171f6912f04fefb"
+            ]
+        ]
+    },
+    {
+        "id": "1171f6912f04fefb",
+        "type": "tables-query",
+        "z": "d5b5487625cf908c",
+        "name": "Bulk INSERT (msg.query)",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 680,
+        "y": 220,
+        "wires": [
+            [
+                "4487c14e25d74525"
+            ]
+        ]
+    },
+    {
+        "id": "4487c14e25d74525",
+        "type": "debug",
+        "z": "d5b5487625cf908c",
+        "name": "backfill done",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "pgsql.rowCount",
+        "targetType": "msg",
+        "statusVal": "pgsql.rowCount",
+        "statusType": "msg",
+        "x": 880,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "fa1a71566bcf218e",
+        "type": "http in",
+        "z": "d5b5487625cf908c",
+        "name": "GET /audit/trace/:serial",
+        "url": "/audit/trace/:serial",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 280,
+        "wires": [
+            [
+                "4e5dcd7fb117b1ae"
+            ]
+        ]
+    },
+    {
+        "id": "4e5dcd7fb117b1ae",
+        "type": "function",
+        "z": "d5b5487625cf908c",
+        "name": "Build genealogy query",
+        "func": "msg.serial = msg.req.params.serial;\nmsg.query = `SELECT to_char(p.ts, 'YYYY-MM-DD HH24:MI:SS') AS time,\n       p.part_number, p.work_order, p.station, p.operation,\n       p.operator_id, p.shift,\n       p.measurement_name, p.measurement_value, p.lsl, p.usl, p.result,\n       p.material_lot, m.supplier, m.heat_number, m.cert_reference,\n       p.gauge_id, to_char(p.gauge_cal_due, 'YYYY-MM-DD') AS gauge_cal_due\nFROM process_events p\nLEFT JOIN material_lots m ON m.lot_id = p.material_lot\nWHERE p.serial_number = $1\nORDER BY p.ts`;\nmsg.params = [msg.serial];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 280,
+        "wires": [
+            [
+                "bb1c70a059ce22f8"
+            ]
+        ]
+    },
+    {
+        "id": "bb1c70a059ce22f8",
+        "type": "tables-query",
+        "z": "d5b5487625cf908c",
+        "name": "Query unit history",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 570,
+        "y": 280,
+        "wires": [
+            [
+                "b79d90854db08d86"
+            ]
+        ]
+    },
+    {
+        "id": "b79d90854db08d86",
+        "type": "function",
+        "z": "d5b5487625cf908c",
+        "name": "Then fetch NCs",
+        "func": "msg.trace = msg.payload;\nmsg.query = 'SELECT to_char(ts, \\'YYYY-MM-DD HH24:MI:SS\\') AS time, station, defect_code, description, disposition, status FROM quality_events WHERE serial_number = $1 ORDER BY ts';\nmsg.params = [msg.serial];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 280,
+        "wires": [
+            [
+                "8538805ab618f945"
+            ]
+        ]
+    },
+    {
+        "id": "8538805ab618f945",
+        "type": "tables-query",
+        "z": "d5b5487625cf908c",
+        "name": "Query quality events",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 960,
+        "y": 280,
+        "wires": [
+            [
+                "67fb0186a1444c8c"
+            ]
+        ]
+    },
+    {
+        "id": "67fb0186a1444c8c",
+        "type": "function",
+        "z": "d5b5487625cf908c",
+        "name": "Assemble JSON evidence pack",
+        "func": "msg.payload = {\n    serial_number: msg.serial,\n    generated_at: new Date().toISOString(),\n    process_history: msg.trace || [],\n    quality_events: msg.payload || []\n};\nmsg.headers = { 'Content-Type': 'application/json' };\nmsg.statusCode = (msg.trace && msg.trace.length) ? 200 : 404;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1210,
+        "y": 280,
+        "wires": [
+            [
+                "30ad07a54fb2ccc5"
+            ]
+        ]
+    },
+    {
+        "id": "30ad07a54fb2ccc5",
+        "type": "http response",
+        "z": "d5b5487625cf908c",
+        "name": "200 JSON",
+        "statusCode": "",
+        "headers": {},
+        "x": 1430,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "0338d67e2c82d526",
+        "type": "http in",
+        "z": "d5b5487625cf908c",
+        "name": "GET /audit/export",
+        "url": "/audit/export",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 130,
+        "y": 340,
+        "wires": [
+            [
+                "ebc92d5a7fce2922"
+            ]
+        ]
+    },
+    {
+        "id": "ebc92d5a7fce2922",
+        "type": "function",
+        "z": "d5b5487625cf908c",
+        "name": "Build export query (?days & ?part)",
+        "func": "const days = Math.max(1, Math.min(365, parseInt(msg.req.query.days, 10) || 1));\nconst part = msg.req.query.part;\nlet where = `p.ts > now() - interval '${days} days'`;\nmsg.params = [];\nif (part) { where += ' AND p.part_number = $1'; msg.params = [part]; }\nmsg.query = `SELECT p.serial_number, p.part_number, p.work_order,\n       to_char(p.ts, 'YYYY-MM-DD HH24:MI:SS') AS timestamp_utc,\n       p.station, p.operation, p.operator_id, p.shift,\n       p.material_lot, m.supplier, m.heat_number, m.cert_reference,\n       p.gauge_id, to_char(p.gauge_cal_due, 'YYYY-MM-DD') AS gauge_cal_due,\n       p.measurement_name, p.measurement_value, p.lsl, p.usl, p.result\nFROM process_events p\nLEFT JOIN material_lots m ON m.lot_id = p.material_lot\nWHERE ${where}\nORDER BY p.ts`;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 340,
+        "wires": [
+            [
+                "3a77496fe7c129cb"
+            ]
+        ]
+    },
+    {
+        "id": "3a77496fe7c129cb",
+        "type": "tables-query",
+        "z": "d5b5487625cf908c",
+        "name": "Query evidence records",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 670,
+        "y": 340,
+        "wires": [
+            [
+                "687b51e9dbe64f3a"
+            ]
+        ]
+    },
+    {
+        "id": "687b51e9dbe64f3a",
+        "type": "function",
+        "z": "d5b5487625cf908c",
+        "name": "Rows → CSV + headers",
+        "func": "const rows = msg.payload || [];\nconst cols = rows.length ? Object.keys(rows[0]) : ['no_records'];\nconst esc = v => {\n    v = (v === null || v === undefined) ? '' : String(v);\n    return /[\",\\n]/.test(v) ? '\"' + v.replace(/\"/g, '\"\"') + '\"' : v;\n};\nconst lines = [cols.join(',')];\nfor (const r of rows) lines.push(cols.map(c => esc(r[c])).join(','));\nmsg.payload = lines.join('\\n');\nmsg.headers = {\n    'Content-Type': 'text/csv',\n    'Content-Disposition': 'attachment; filename=\"line3-audit-evidence.csv\"'\n};\nmsg.statusCode = 200;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 910,
+        "y": 340,
+        "wires": [
+            [
+                "0caa8c2469a63d57"
+            ]
+        ]
+    },
+    {
+        "id": "0caa8c2469a63d57",
+        "type": "http response",
+        "z": "d5b5487625cf908c",
+        "name": "200 text/csv",
+        "statusCode": "",
+        "headers": {},
+        "x": 1110,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "0bc2f10466e9101b",
+        "type": "debug",
+        "z": "d5b5487625cf908c",
+        "name": "Live Data",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 900,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "8060815e3ef9f4cf",
+        "type": "inject",
+        "z": "f965f2b01599455d",
+        "name": "Every 30 s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "30",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 40,
+        "wires": [
+            [
+                "4e5795c6f79312c3"
+            ]
+        ]
+    },
+    {
+        "id": "4e5795c6f79312c3",
+        "type": "tables-query",
+        "z": "f965f2b01599455d",
+        "name": "Topline audit stats (24 h)",
+        "query": "-- Topline audit stats, last 24 hours\nWITH started AS (\n  SELECT DISTINCT serial_number FROM process_events\n  WHERE ts > now() - interval '24 hours' AND station = 'OP10'\n),\nfailed AS (\n  SELECT DISTINCT serial_number FROM process_events\n  WHERE ts > now() - interval '24 hours' AND result = 'FAIL'\n)\nSELECT\n  (SELECT count(*) FROM started) AS units_started_24h,\n  round(100.0 * (SELECT count(*) FROM started s\n                 WHERE NOT EXISTS (SELECT 1 FROM failed f WHERE f.serial_number = s.serial_number))\n        / NULLIF((SELECT count(*) FROM started), 0), 1) AS fpy_pct,\n  (SELECT round(1000000.0 * count(*) FILTER (WHERE result = 'FAIL') / NULLIF(count(*), 0), 0)\n     FROM process_events WHERE ts > now() - interval '24 hours') AS defect_ppm_ops,\n  (SELECT count(*) FROM quality_events WHERE status = 'open') AS open_ncs,\n  (SELECT round(100.0 * count(*) FILTER (WHERE material_lot IS NOT NULL\n                                           AND gauge_id IS NOT NULL\n                                           AND operator_id IS NOT NULL)\n        / NULLIF(count(*), 0), 1)\n     FROM process_events WHERE ts > now() - interval '24 hours') AS trace_coverage_pct,\n  (SELECT count(DISTINCT gauge_id) FROM process_events\n    WHERE gauge_cal_due < CURRENT_DATE + 30) AS gauges_cal_due_30d;",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 310,
+        "y": 40,
+        "wires": [
+            [
+                "c767be1ef2768020"
+            ]
+        ]
+    },
+    {
+        "id": "c767be1ef2768020",
+        "type": "function",
+        "z": "f965f2b01599455d",
+        "name": "Format numbers",
+        "func": "const r = (msg.payload && msg.payload[0]) || {};\nconst num = v => (v === null || v === undefined) ? null : Number(v);\nmsg.payload = {\n    units_started_24h: num(r.units_started_24h) || 0,\n    fpy_pct: num(r.fpy_pct),\n    defect_ppm_ops: num(r.defect_ppm_ops),\n    open_ncs: num(r.open_ncs) || 0,\n    trace_coverage_pct: num(r.trace_coverage_pct),\n    gauges_cal_due_30d: num(r.gauges_cal_due_30d) || 0\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 40,
+        "wires": [
+            [
+                "33adbbb575f777b5"
+            ]
+        ]
+    },
+    {
+        "id": "33adbbb575f777b5",
+        "type": "ui-template",
+        "z": "f965f2b01599455d",
+        "group": "grp.topline",
+        "page": "",
+        "ui": "",
+        "name": "Topline stat tiles",
+        "order": 1,
+        "width": "12",
+        "height": "2",
+        "head": "",
+        "format": "<template>\n    <div class=\"tl-grid\">\n        <div class=\"tl-card\" v-for=\"c in cards\" :key=\"c.label\">\n            <div class=\"tl-value\">{{ c.value }}</div>\n            <div class=\"tl-label\">{{ c.label }}</div>\n        </div>\n    </div>\n</template>\n\n<script>\nexport default {\n    computed: {\n        cards() {\n            const p = this.msg?.payload || {};\n            const f = (v, suf = '') => (v === null || v === undefined) ? '—' : v.toLocaleString() + suf;\n            return [\n                { label: 'Units started (24 h)', value: f(p.units_started_24h) },\n                { label: 'First pass yield', value: f(p.fpy_pct, ' %') },\n                { label: 'Defect rate', value: f(p.defect_ppm_ops, ' PPM') },\n                { label: 'Open nonconformances', value: f(p.open_ncs) },\n                { label: 'Traceability coverage', value: f(p.trace_coverage_pct, ' %') },\n                { label: 'Gauges due cal ≤ 30 d', value: f(p.gauges_cal_due_30d) }\n            ];\n        }\n    }\n}\n</script>\n\n<style>\n.tl-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }\n@media (max-width: 900px) { .tl-grid { grid-template-columns: repeat(2, 1fr); } }\n.tl-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 14px 8px; text-align: center; background: #fff; }\n.tl-value { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }\n.tl-label { font-size: 0.72rem; color: #666; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }\n</style>",
+        "storeOutMessages": false,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 720,
+        "y": 40,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c4b134eeef9b64c8",
+        "type": "ui-template",
+        "z": "f965f2b01599455d",
+        "group": "grp.topline",
+        "page": "",
+        "ui": "",
+        "name": "Evidence CSV export",
+        "order": 2,
+        "width": "12",
+        "height": "1",
+        "head": "",
+        "format": "<template>\n    <div class=\"exp-row\">\n        <v-select v-model=\"days\" :items=\"opts\" item-title=\"label\" item-value=\"value\"\n                  label=\"Range\" density=\"compact\" hide-details style=\"max-width: 170px;\" />\n        <v-btn prepend-icon=\"mdi-download\" @click=\"dl\">Download evidence CSV</v-btn>\n        <span class=\"exp-hint\">Same data is available to auditors at <code>/audit/trace/&lt;serial&gt;</code></span>\n    </div>\n</template>\n\n<script>\nexport default {\n    data() {\n        return {\n            days: 1,\n            opts: [\n                { label: 'Last 24 hours', value: 1 },\n                { label: 'Last 7 days', value: 7 },\n                { label: 'Last 30 days', value: 30 }\n            ]\n        };\n    },\n    methods: {\n        dl() { window.open(`/audit/export?days=${this.days}`, '_blank'); }\n    }\n}\n</script>\n\n<style>\n.exp-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }\n.exp-hint { font-size: 0.78rem; color: #888; }\n</style>",
+        "storeOutMessages": false,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 920,
+        "y": 40,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3f09686f6c74724f",
+        "type": "ui-text-input",
+        "z": "f965f2b01599455d",
+        "group": "grp.lookup",
+        "name": "Serial input",
+        "label": "Serial number (paste from NC log or CSV)",
+        "order": 1,
+        "width": "6",
+        "height": "1",
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "text",
+        "delay": 0,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": false,
+        "sendOnEnter": true,
+        "className": "",
+        "clearable": true,
+        "sendOnClear": false,
+        "icon": "magnify",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "x": 110,
+        "y": 100,
+        "wires": [
+            [
+                "c973212d08719080"
+            ]
+        ]
+    },
+    {
+        "id": "c973212d08719080",
+        "type": "function",
+        "z": "f965f2b01599455d",
+        "name": "Build unit history query",
+        "func": "const serial = String(msg.payload || '').trim();\nif (!serial) return null;\nmsg.query = `SELECT to_char(p.ts, 'YYYY-MM-DD HH24:MI:SS') AS time,\n       p.station, p.operation,\n       p.measurement_name AS measurement, p.measurement_value AS value,\n       concat(p.lsl, ' - ', p.usl) AS spec, p.result,\n       p.operator_id AS operator, p.material_lot,\n       m.heat_number, m.supplier, m.cert_reference,\n       p.gauge_id, to_char(p.gauge_cal_due, 'YYYY-MM-DD') AS gauge_cal_due\nFROM process_events p\nLEFT JOIN material_lots m ON m.lot_id = p.material_lot\nWHERE p.serial_number = $1\nORDER BY p.ts`;\nmsg.params = [serial];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 310,
+        "y": 100,
+        "wires": [
+            [
+                "83aad3d4ca44b545"
+            ]
+        ]
+    },
+    {
+        "id": "83aad3d4ca44b545",
+        "type": "tables-query",
+        "z": "f965f2b01599455d",
+        "name": "Query unit genealogy",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 540,
+        "y": 100,
+        "wires": [
+            [
+                "70a73c7ed81125e8"
+            ]
+        ]
+    },
+    {
+        "id": "70a73c7ed81125e8",
+        "type": "ui-table",
+        "z": "f965f2b01599455d",
+        "group": "grp.lookup",
+        "name": "Unit history",
+        "label": "Unit history — every station, lot, gauge & result",
+        "order": 2,
+        "width": "12",
+        "height": 0,
+        "maxrows": 8,
+        "passthru": false,
+        "autocols": true,
+        "showSearch": false,
+        "deselect": false,
+        "selectionType": "none",
+        "columns": [],
+        "mobileBreakpoint": "sm",
+        "mobileBreakpointType": "defaults",
+        "action": "replace",
+        "className": "",
+        "x": 730,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "982fdd6def314e9a",
+        "type": "inject",
+        "z": "f965f2b01599455d",
+        "name": "Every 60 s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "6",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 160,
+        "wires": [
+            [
+                "b51f58ba2fb19cf0"
+            ]
+        ]
+    },
+    {
+        "id": "b51f58ba2fb19cf0",
+        "type": "tables-query",
+        "z": "f965f2b01599455d",
+        "name": "FPY per hour (24 h)",
+        "query": "-- First pass yield per hour, last 24 hours\nWITH s AS (\n  SELECT serial_number, date_trunc('hour', min(ts)) AS hr\n  FROM process_events\n  WHERE ts > now() - interval '24 hours'\n  GROUP BY serial_number\n),\nf AS (\n  SELECT DISTINCT serial_number FROM process_events\n  WHERE ts > now() - interval '24 hours' AND result = 'FAIL'\n)\nSELECT extract(epoch FROM s.hr) * 1000 AS x,\n       round(100.0 * count(*) FILTER (WHERE f.serial_number IS NULL) / count(*), 1) AS y\nFROM s\nLEFT JOIN f ON f.serial_number = s.serial_number\nGROUP BY s.hr\nORDER BY s.hr;",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 290,
+        "y": 160,
+        "wires": [
+            [
+                "dfac7b9be2349b10"
+            ]
+        ]
+    },
+    {
+        "id": "dfac7b9be2349b10",
+        "type": "function",
+        "z": "f965f2b01599455d",
+        "name": "Rows → chart points",
+        "func": "msg.topic = 'FPY %';\nmsg.payload = (msg.payload || []).map(r => ({ x: Number(r.x), y: Number(r.y) }));\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 160,
+        "wires": [
+            [
+                "738627452c42372a"
+            ]
+        ]
+    },
+    {
+        "id": "738627452c42372a",
+        "type": "ui-chart",
+        "z": "f965f2b01599455d",
+        "group": "grp.fpy",
+        "name": "FPY trend",
+        "label": "First pass yield — last 24 h",
+        "order": 1,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "x",
+        "xAxisPropertyType": "property",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "FPY %",
+        "yAxisProperty": "y",
+        "yAxisPropertyType": "property",
+        "ymin": "",
+        "ymax": "",
+        "bins": 10,
+        "action": "replace",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 3,
+        "showLegend": false,
+        "removeOlder": 1,
+        "removeOlderUnit": "86400",
+        "removeOlderPoints": "",
+        "colors": [
+            "#0094CE",
+            "#ff6384",
+            "#ff9f40",
+            "#ffcd56",
+            "#4bc0c0",
+            "#36a2eb",
+            "#9966ff",
+            "#c9cbcf",
+            "#7f8c8d"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": "6",
+        "height": "6",
+        "className": "",
+        "interpolation": "linear",
+        "x": 680,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "6907d7de89c4d506",
+        "type": "inject",
+        "z": "f965f2b01599455d",
+        "name": "Every 30 s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "30",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "7",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 220,
+        "wires": [
+            [
+                "53f99f2199e323f9"
+            ]
+        ]
+    },
+    {
+        "id": "53f99f2199e323f9",
+        "type": "tables-query",
+        "z": "f965f2b01599455d",
+        "name": "Latest quality events",
+        "query": "SELECT to_char(ts, 'YYYY-MM-DD HH24:MI') AS logged,\n       serial_number, station, defect_code, description, disposition, status\nFROM quality_events\nORDER BY ts DESC\nLIMIT 25;",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 300,
+        "y": 220,
+        "wires": [
+            [
+                "955001f03a801da8"
+            ]
+        ]
+    },
+    {
+        "id": "955001f03a801da8",
+        "type": "ui-table",
+        "z": "f965f2b01599455d",
+        "group": "grp.ncs",
+        "name": "NC log",
+        "label": "Nonconformance log (latest 25)",
+        "order": 1,
+        "width": "6",
+        "height": 0,
+        "maxrows": 10,
+        "passthru": false,
+        "autocols": true,
+        "showSearch": false,
+        "deselect": false,
+        "selectionType": "none",
+        "columns": [],
+        "mobileBreakpoint": "sm",
+        "mobileBreakpointType": "defaults",
+        "action": "replace",
+        "className": "",
+        "x": 470,
+        "y": 220,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "mcp.tool.trace",
+        "type": "mcp-tool",
+        "z": "ff.line3.tab.mcp",
+        "name": "get_unit_trace",
+        "server": "5fc992c78ba4e7eb",
+        "toolName": "get_unit_trace",
+        "title": "Get Unit Trace",
+        "description": "Returns the complete traceability record for one unit serial number: every station event with measurements vs. spec, operator and shift, material lot genealogy (supplier, heat number, certificate), gauge IDs with calibration due dates, plus any nonconformances. Use when an auditor or engineer asks about a specific unit.",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"serial_number\": {\n      \"type\": \"string\",\n      \"description\": \"Full unit serial number, e.g. EWP2201A-260714-00123\",\n      \"minLength\": 1\n    }\n  },\n  \"required\": [\n    \"serial_number\"\n  ]\n}",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "_meta": "",
+        "x": 110,
+        "y": 40,
+        "wires": [
+            [
+                "mcp.fn.trace.prep"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.trace.prep",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Build genealogy query",
+        "func": "// Tool args arrive in msg.payload per the input schema\nconst serial = String((msg.payload && msg.payload.serial_number) || '').trim();\nif (!serial) {\n    msg.payload = { error: 'serial_number is required' };\n    return [null, msg]; // straight to response\n}\nmsg.serial = serial;\nmsg.query = `SELECT to_char(p.ts, 'YYYY-MM-DD HH24:MI:SS') AS time,\n       p.part_number, p.work_order, p.station, p.operation,\n       p.operator_id, p.shift,\n       p.measurement_name, p.measurement_value, p.lsl, p.usl, p.result,\n       p.material_lot, m.supplier, m.heat_number, m.cert_reference,\n       p.gauge_id, to_char(p.gauge_cal_due, 'YYYY-MM-DD') AS gauge_cal_due\nFROM process_events p\nLEFT JOIN material_lots m ON m.lot_id = p.material_lot\nWHERE p.serial_number = $1\nORDER BY p.ts`;\nmsg.params = [serial];\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 40,
+        "wires": [
+            [
+                "mcp.q.trace"
+            ],
+            [
+                "mcp.resp.main"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.q.trace",
+        "type": "tables-query",
+        "z": "ff.line3.tab.mcp",
+        "name": "Query unit history",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 570,
+        "y": 40,
+        "wires": [
+            [
+                "mcp.fn.trace.stash"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.trace.stash",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Then fetch NCs",
+        "func": "msg.trace = msg.payload;\nmsg.query = 'SELECT to_char(ts, \\'YYYY-MM-DD HH24:MI:SS\\') AS time, station, defect_code, description, disposition, status FROM quality_events WHERE serial_number = $1 ORDER BY ts';\nmsg.params = [msg.serial];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 40,
+        "wires": [
+            [
+                "mcp.q.trace.nc"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.q.trace.nc",
+        "type": "tables-query",
+        "z": "ff.line3.tab.mcp",
+        "name": "Query quality events",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 970,
+        "y": 40,
+        "wires": [
+            [
+                "mcp.fn.trace.fmt"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.trace.fmt",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Assemble evidence pack",
+        "func": "msg.payload = {\n    serial_number: msg.serial,\n    found: !!(msg.trace && msg.trace.length),\n    process_history: msg.trace || [],\n    quality_events: msg.payload || []\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1180,
+        "y": 40,
+        "wires": [
+            [
+                "mcp.resp.main"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.tool.stats",
+        "type": "mcp-tool",
+        "z": "ff.line3.tab.mcp",
+        "name": "get_topline_audit_stats",
+        "server": "5fc992c78ba4e7eb",
+        "toolName": "get_topline_audit_stats",
+        "title": "Get Topline Audit Stats",
+        "description": "Returns the topline audit statistics for a chosen look-back window (default 24 hours): units started, first pass yield %, defect PPM, open nonconformances, traceability coverage % and gauges due calibration within 30 days. Use for 'how is the line doing' and audit-prep summary questions.",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"hours\": {\n      \"type\": \"number\",\n      \"description\": \"Look-back window in hours (1-720)\",\n      \"minimum\": 1,\n      \"maximum\": 720,\n      \"default\": 24\n    }\n  }\n}",
+        "x": 140,
+        "y": 140,
+        "wires": [
+            [
+                "mcp.fn.stats.prep"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.res.stats",
+        "type": "mcp-resource",
+        "z": "ff.line3.tab.mcp",
+        "name": "Topline stats resource",
+        "server": "5fc992c78ba4e7eb",
+        "resourceUri": "db://audit/topline-stats",
+        "resourceId": "topline_audit_stats",
+        "title": "Topline Audit Stats (last 24 h)",
+        "description": "Current topline audit statistics for Line 3 over the last 24 hours: units started, FPY, defect PPM, open NCs, traceability coverage and gauge calibration status.",
+        "mimeType": "application/json",
+        "x": 140,
+        "y": 200,
+        "wires": [
+            [
+                "mcp.fn.stats.prep"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.stats.prep",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Build stats query",
+        "func": "// Used by both the get_topline_audit_stats tool and the topline resource.\n// Tool args in msg.payload; resource requests carry no args -> default 24 h.\nlet hours = Number(msg.payload && msg.payload.hours);\nif (!Number.isFinite(hours) || hours < 1 || hours > 720) hours = 24;\nmsg.window_hours = hours;\nmsg.query = `WITH started AS (\n  SELECT DISTINCT serial_number FROM process_events\n  WHERE ts > now() - make_interval(hours => $1::int) AND station = 'OP10'\n),\nfailed AS (\n  SELECT DISTINCT serial_number FROM process_events\n  WHERE ts > now() - make_interval(hours => $1::int) AND result = 'FAIL'\n)\nSELECT\n  (SELECT count(*) FROM started) AS units_started,\n  round(100.0 * (SELECT count(*) FROM started s\n                 WHERE NOT EXISTS (SELECT 1 FROM failed f WHERE f.serial_number = s.serial_number))\n        / NULLIF((SELECT count(*) FROM started), 0), 1) AS fpy_pct,\n  (SELECT round(1000000.0 * count(*) FILTER (WHERE result = 'FAIL') / NULLIF(count(*), 0), 0)\n     FROM process_events WHERE ts > now() - make_interval(hours => $1::int)) AS defect_ppm_ops,\n  (SELECT count(*) FROM quality_events WHERE status = 'open') AS open_ncs,\n  (SELECT round(100.0 * count(*) FILTER (WHERE material_lot IS NOT NULL\n                                           AND gauge_id IS NOT NULL\n                                           AND operator_id IS NOT NULL)\n        / NULLIF(count(*), 0), 1)\n     FROM process_events WHERE ts > now() - make_interval(hours => $1::int)) AS trace_coverage_pct,\n  (SELECT count(DISTINCT gauge_id) FROM process_events\n    WHERE gauge_cal_due < CURRENT_DATE + 30) AS gauges_cal_due_30d`;\nmsg.params = [hours];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 170,
+        "wires": [
+            [
+                "mcp.q.stats"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.q.stats",
+        "type": "tables-query",
+        "z": "ff.line3.tab.mcp",
+        "name": "Query topline stats",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 580,
+        "y": 170,
+        "wires": [
+            [
+                "mcp.fn.stats.fmt"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.stats.fmt",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Format stats",
+        "func": "const r = (msg.payload && msg.payload[0]) || {};\nconst num = v => (v === null || v === undefined) ? null : Number(v);\nmsg.payload = {\n    window_hours: msg.window_hours,\n    units_started: num(r.units_started) || 0,\n    first_pass_yield_pct: num(r.fpy_pct),\n    defect_ppm: num(r.defect_ppm_ops),\n    open_nonconformances: num(r.open_ncs) || 0,\n    traceability_coverage_pct: num(r.trace_coverage_pct),\n    gauges_cal_due_within_30_days: num(r.gauges_cal_due_30d) || 0\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 170,
+        "wires": [
+            [
+                "mcp.resp.main"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.tool.nc",
+        "type": "mcp-tool",
+        "z": "ff.line3.tab.mcp",
+        "name": "search_nonconformances",
+        "server": "5fc992c78ba4e7eb",
+        "toolName": "search_nonconformances",
+        "title": "Search Nonconformances",
+        "description": "Searches quality/nonconformance events with optional filters: status (open/closed), station (OP10-OP40), defect code and look-back window in days (default 7). Returns time, serial number, station, defect code, description, disposition and status. Use for questions about defects, rejects, containment and MRB items.",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"days\": {\n      \"type\": \"number\",\n      \"description\": \"Look-back window in days (1-365)\",\n      \"minimum\": 1,\n      \"maximum\": 365,\n      \"default\": 7\n    },\n    \"status\": {\n      \"type\": \"string\",\n      \"description\": \"Filter by NC status\",\n      \"enum\": [\n        \"open\",\n        \"closed\"\n      ]\n    },\n    \"station\": {\n      \"type\": \"string\",\n      \"description\": \"Filter by station\",\n      \"enum\": [\n        \"OP10\",\n        \"OP20\",\n        \"OP30\",\n        \"OP40\"\n      ]\n    },\n    \"defect_code\": {\n      \"type\": \"string\",\n      \"description\": \"Filter by defect code, e.g. LEAK-01\"\n    },\n    \"limit\": {\n      \"type\": \"number\",\n      \"description\": \"Max rows to return (1-500)\",\n      \"minimum\": 1,\n      \"maximum\": 500,\n      \"default\": 50\n    }\n  }\n}",
+        "x": 140,
+        "y": 280,
+        "wires": [
+            [
+                "mcp.fn.nc.prep"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.nc.prep",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Build NC search query",
+        "func": "const a = msg.payload || {};\nlet days = Number(a.days);\nif (!Number.isFinite(days) || days < 1 || days > 365) days = 7;\nlet limit = Number(a.limit);\nif (!Number.isFinite(limit) || limit < 1 || limit > 500) limit = 50;\n\nconst where = ['ts > now() - make_interval(days => $1::int)'];\nconst params = [days];\nfor (const [field, val] of [['status', a.status], ['station', a.station], ['defect_code', a.defect_code]]) {\n    if (val) {\n        params.push(String(val));\n        where.push(`${field} = $${params.length}`);\n    }\n}\nmsg.query = `SELECT to_char(ts, 'YYYY-MM-DD HH24:MI') AS logged,\n       serial_number, station, defect_code, description, disposition, status\nFROM quality_events\nWHERE ${where.join(' AND ')}\nORDER BY ts DESC\nLIMIT ${limit}`;\nmsg.params = params;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 280,
+        "wires": [
+            [
+                "mcp.q.nc"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.q.nc",
+        "type": "tables-query",
+        "z": "ff.line3.tab.mcp",
+        "name": "Query quality events",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 580,
+        "y": 280,
+        "wires": [
+            [
+                "mcp.fn.nc.fmt"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.nc.fmt",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Wrap rows",
+        "func": "msg.payload = { count: (msg.payload || []).length, rows: msg.payload || [] };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 280,
+        "wires": [
+            [
+                "mcp.resp.main"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.tool.fpy",
+        "type": "mcp-tool",
+        "z": "ff.line3.tab.mcp",
+        "name": "get_fpy_by_part_and_day",
+        "server": "5fc992c78ba4e7eb",
+        "toolName": "get_fpy_by_part_and_day",
+        "title": "Get FPY by Part and Day",
+        "description": "Returns first pass yield % broken down by part number and calendar day for a look-back window in days (default 7, max 90). Use for trend questions, 'which part is struggling', and audit-prep yield summaries.",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"days\": {\n      \"type\": \"number\",\n      \"description\": \"Look-back window in days (1-90)\",\n      \"minimum\": 1,\n      \"maximum\": 90,\n      \"default\": 7\n    }\n  }\n}",
+        "x": 140,
+        "y": 360,
+        "wires": [
+            [
+                "mcp.fn.fpy.prep"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.fpy.prep",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Build FPY query",
+        "func": "const a = msg.payload || {};\nlet days = Number(a.days);\nif (!Number.isFinite(days) || days < 1 || days > 90) days = 7;\nmsg.query = `WITH s AS (\n  SELECT serial_number, part_number, date_trunc('day', min(ts)) AS d\n  FROM process_events\n  WHERE ts > now() - make_interval(days => $1::int)\n  GROUP BY serial_number, part_number\n),\nf AS (\n  SELECT DISTINCT serial_number FROM process_events\n  WHERE ts > now() - make_interval(days => $1::int) AND result = 'FAIL'\n)\nSELECT s.part_number,\n       to_char(s.d, 'YYYY-MM-DD') AS day,\n       count(*) AS units_started,\n       round(100.0 * count(*) FILTER (WHERE f.serial_number IS NULL) / count(*), 1) AS fpy_pct\nFROM s\nLEFT JOIN f ON f.serial_number = s.serial_number\nGROUP BY s.part_number, s.d\nORDER BY s.d, s.part_number`;\nmsg.params = [days];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 360,
+        "wires": [
+            [
+                "mcp.q.fpy"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.q.fpy",
+        "type": "tables-query",
+        "z": "ff.line3.tab.mcp",
+        "name": "Query FPY breakdown",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 580,
+        "y": 360,
+        "wires": [
+            [
+                "mcp.fn.fpy.fmt"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.fpy.fmt",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Wrap rows",
+        "func": "msg.payload = { count: (msg.payload || []).length, rows: msg.payload || [] };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 360,
+        "wires": [
+            [
+                "mcp.resp.main"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.tool.lot",
+        "type": "mcp-tool",
+        "z": "ff.line3.tab.mcp",
+        "name": "get_lot_genealogy",
+        "server": "5fc992c78ba4e7eb",
+        "toolName": "get_lot_genealogy",
+        "title": "Get Material Lot Genealogy",
+        "description": "Given a material lot ID (e.g. LOT-A-1042), returns the lot's supplier, heat number, certificate reference and receipt date, plus every unit serial built with that lot and its PASS/FAIL outcome. Use for supplier-quality and containment questions ('which units contain lot X?').",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"lot_id\": {\n      \"type\": \"string\",\n      \"description\": \"Material lot ID, e.g. LOT-A-1042\",\n      \"minLength\": 1\n    }\n  },\n  \"required\": [\n    \"lot_id\"\n  ]\n}",
+        "x": 140,
+        "y": 440,
+        "wires": [
+            [
+                "mcp.fn.lot.prep"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.lot.prep",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Build lot query",
+        "func": "const lot = String((msg.payload && msg.payload.lot_id) || '').trim();\nif (!lot) {\n    msg.payload = { error: 'lot_id is required' };\n    return [null, msg];\n}\nmsg.lot = lot;\nmsg.query = `SELECT lot_id, part_family, supplier, heat_number, cert_reference,\n       to_char(received_at, 'YYYY-MM-DD') AS received_at\nFROM material_lots WHERE lot_id = $1`;\nmsg.params = [lot];\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 440,
+        "wires": [
+            [
+                "mcp.q.lot"
+            ],
+            [
+                "mcp.resp.main"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.q.lot",
+        "type": "tables-query",
+        "z": "ff.line3.tab.mcp",
+        "name": "Query lot record",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 580,
+        "y": 440,
+        "wires": [
+            [
+                "mcp.fn.lot.stash"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.lot.stash",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Then fetch affected units",
+        "func": "msg.lotInfo = (msg.payload && msg.payload[0]) || null;\nmsg.query = `SELECT p.serial_number,\n       to_char(min(p.ts), 'YYYY-MM-DD HH24:MI') AS built_at,\n       CASE WHEN bool_or(p.result = 'FAIL') THEN 'FAIL' ELSE 'PASS' END AS outcome\nFROM process_events p\nWHERE p.material_lot = $1\nGROUP BY p.serial_number\nORDER BY min(p.ts)`;\nmsg.params = [msg.lot];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 440,
+        "wires": [
+            [
+                "mcp.q.lot.units"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.q.lot.units",
+        "type": "tables-query",
+        "z": "ff.line3.tab.mcp",
+        "name": "Query units using lot",
+        "query": "-- SQL arrives via msg.query",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 1020,
+        "y": 440,
+        "wires": [
+            [
+                "mcp.fn.lot.fmt"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.lot.fmt",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Assemble genealogy",
+        "func": "const units = msg.payload || [];\nmsg.payload = {\n    lot_id: msg.lot,\n    found: !!msg.lotInfo,\n    lot: msg.lotInfo,\n    units_built: units.length,\n    units_failed: units.filter(u => u.outcome === 'FAIL').length,\n    units // full list -> containment scope if this lot is ever suspect\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1240,
+        "y": 440,
+        "wires": [
+            [
+                "mcp.resp.main"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.res.schema",
+        "type": "mcp-resource",
+        "z": "ff.line3.tab.mcp",
+        "name": "Audit schema resource",
+        "server": "5fc992c78ba4e7eb",
+        "resourceUri": "db://audit/schema",
+        "resourceId": "audit_database_schema",
+        "title": "Audit Database Schema",
+        "description": "Describes the Line 3 audit database: the three tables (process_events, material_lots, quality_events), their columns, and the IATF 16949 clauses they support. Read this first to understand what evidence exists.",
+        "mimeType": "application/json",
+        "x": 140,
+        "y": 540,
+        "wires": [
+            [
+                "mcp.fn.schema"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.schema",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Static schema description",
+        "func": "// Static resource: describes the audit database so agents can reason about it\nmsg.payload = {\n    database: 'FlowFuse Tables (PostgreSQL)',\n    purpose: 'Continuous IATF 16949 traceability records for Line 3 (EWP-2201 electric water pump assembly)',\n    tables: {\n        process_events: {\n            description: 'One row per unit per station. The core traceability record: who, what, when, measurement vs. spec, material lot, gauge and its calibration due date.',\n            columns: ['id', 'ts', 'serial_number', 'part_number', 'work_order', 'station (OP10 rotor press | OP20 housing torque | OP30 leak test | OP40 EOL performance)', 'operation', 'operator_id', 'shift (A|B|C)', 'material_lot', 'gauge_id', 'gauge_cal_due', 'measurement_name', 'measurement_value', 'lsl', 'usl', 'result (PASS|FAIL)']\n        },\n        material_lots: {\n            description: 'Incoming material genealogy: supplier, heat number and certificate reference per lot.',\n            columns: ['lot_id', 'part_family', 'supplier', 'heat_number', 'cert_reference', 'received_at']\n        },\n        quality_events: {\n            description: 'Nonconformances raised automatically when a unit fails a station.',\n            columns: ['id', 'ts', 'serial_number', 'station', 'defect_code', 'description', 'disposition', 'status (open|closed)']\n        }\n    },\n    iatf_context: 'Supports clause 8.5.2 (identification & traceability), 7.1.5 (measurement traceability / gauge calibration) and 10.2 (nonconformity and corrective action).'\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 540,
+        "wires": [
+            [
+                "mcp.resp.main"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.prompt.brief",
+        "type": "mcp-prompt",
+        "z": "ff.line3.tab.mcp",
+        "name": "audit_readiness_briefing",
+        "server": "5fc992c78ba4e7eb",
+        "promptId": "audit_readiness_briefing",
+        "title": "Audit Readiness Briefing",
+        "description": "Guides the AI through a full audit-prep pass: topline stats, open NCs, FPY dips and spot-check unit traces, ending with likely auditor probes and the evidence for each.",
+        "template": "You are helping prepare evidence for an IATF 16949 audit of Line 3 (EWP-2201 electric water pump assembly).\n\nProduce an audit-readiness briefing for the last {{ period }}:\n\n1. Call get_topline_audit_stats and report units started, first pass yield, defect PPM, open nonconformances, traceability coverage and gauges due calibration within 30 days.\n2. Call search_nonconformances (status: open) and summarise the open NCs by station and defect code, flagging anything without a disposition.\n3. Call get_fpy_by_part_and_day and note any day/part combination where FPY dropped below {{ fpy_threshold }} percent.\n4. For any failed units that stand out, call get_unit_trace and check the genealogy is complete (material lot, heat number, gauge calibration all present).\n\nFinish with a short list of items a lead auditor is likely to probe, and the evidence already available for each. Keep the tone factual - no speculation beyond the data returned.",
+        "arguments": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"period\": {\n      \"type\": \"string\",\n      \"description\": \"Reporting period, e.g. '7 days' or '24 hours'\",\n      \"default\": \"7 days\"\n    },\n    \"fpy_threshold\": {\n      \"type\": \"number\",\n      \"description\": \"FPY percentage below which a day/part should be flagged\",\n      \"default\": 95\n    }\n  },\n  \"required\": [\n    \"period\"\n  ]\n}",
+        "x": 160,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "mcp.resp.main",
+        "type": "mcp-response",
+        "z": "ff.line3.tab.mcp",
+        "name": "MCP response",
+        "x": 1560,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "mcp.catch",
+        "type": "catch",
+        "z": "ff.line3.tab.mcp",
+        "name": "Any error on this tab",
+        "scope": null,
+        "uncaught": false,
+        "x": 1010,
+        "y": 620,
+        "wires": [
+            [
+                "mcp.fn.err"
+            ]
+        ]
+    },
+    {
+        "id": "mcp.fn.err",
+        "type": "function",
+        "z": "ff.line3.tab.mcp",
+        "name": "Error → payload",
+        "func": "msg.payload = {\n    error: (msg.error && msg.error.message) || 'Unexpected error while querying the audit database',\n    source: msg.error && msg.error.source && msg.error.source.name\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1210,
+        "y": 620,
+        "wires": [
+            [
+                "mcp.resp.main"
+            ]
+        ]
+    },
+    {
+        "id": "43dac04625955faa",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.30.2",
+            "@flowfuse-nodes/nr-mcp-server-nodes": "0.5.1",
+            "@flowfuse/nr-tables-nodes": "0.2.2"
+        }
+    }
+]
