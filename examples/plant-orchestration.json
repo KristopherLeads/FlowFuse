@@ -1,0 +1,558 @@
+[
+    {
+        "id": "tab_plant_orch",
+        "type": "tab",
+        "label": "Plant Orchestration Demo",
+        "disabled": false,
+        "info": "Self-contained plant orchestration demo. No hardware required.\n\n1. Install @flowfuse/node-red-dashboard (Manage Palette).\n2. Deploy.\n3. Open the dashboard at /dashboard.\n4. Click 'Run Production Batch' to watch a batch hand off across all three lines.\n",
+        "env": []
+    },
+    {
+        "id": "ui_base",
+        "type": "ui-base",
+        "name": "Plant Orchestration",
+        "path": "/dashboard",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "default",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 1,
+        "showDisconnectNotification": true
+    },
+    {
+        "id": "ui_theme",
+        "type": "ui-theme",
+        "name": "FlowFuse Dark",
+        "colors": {
+            "surface": "#0f1b24",
+            "primary": "#e0115f",
+            "bgPage": "#0b141a",
+            "groupBg": "#152730",
+            "groupOutline": "#2a3f4d"
+        },
+        "sizes": {
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "8px",
+            "widgetGap": "12px",
+            "density": "default"
+        }
+    },
+    {
+        "id": "ui_page",
+        "type": "ui-page",
+        "name": "Plant Overview",
+        "ui": "ui_base",
+        "path": "/plant",
+        "icon": "factory",
+        "layout": "grid",
+        "theme": "ui_theme",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": 0,
+                "cols": 3
+            },
+            {
+                "name": "Tablet",
+                "px": 576,
+                "cols": 6
+            },
+            {
+                "name": "Small Desktop",
+                "px": 768,
+                "cols": 9
+            },
+            {
+                "name": "Desktop",
+                "px": 1024,
+                "cols": 12
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": true,
+        "disabled": false
+    },
+    {
+        "id": "g_kpi",
+        "type": "ui-group",
+        "name": "Plant KPIs",
+        "page": "ui_page",
+        "width": 12,
+        "height": 1,
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": true,
+        "disabled": false,
+        "groupType": "default"
+    },
+    {
+        "id": "g_lines",
+        "type": "ui-group",
+        "name": "Line Status",
+        "page": "ui_page",
+        "width": 12,
+        "height": "5",
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "g_chart",
+        "type": "ui-group",
+        "name": "OEE Trend (live)",
+        "page": "ui_page",
+        "width": 8,
+        "height": 1,
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": true,
+        "disabled": false,
+        "groupType": "default"
+    },
+    {
+        "id": "g_control",
+        "type": "ui-group",
+        "name": "Orchestration Controls",
+        "page": "ui_page",
+        "width": 4,
+        "height": 1,
+        "order": 4,
+        "showTitle": true,
+        "className": "",
+        "visible": true,
+        "disabled": false,
+        "groupType": "default"
+    },
+    {
+        "id": "g_events",
+        "type": "ui-group",
+        "name": "Event & Downtime Log",
+        "page": "ui_page",
+        "width": 12,
+        "height": 1,
+        "order": 5,
+        "showTitle": true,
+        "className": "",
+        "visible": true,
+        "disabled": false,
+        "groupType": "default"
+    },
+    {
+        "id": "w_oee",
+        "type": "ui-gauge",
+        "z": "tab_plant_orch",
+        "name": "Plant OEE",
+        "group": "g_kpi",
+        "order": 1,
+        "value": "payload",
+        "valueType": "msg",
+        "width": 4,
+        "height": "4",
+        "gtype": "gauge-half",
+        "gstyle": "rounded",
+        "title": "",
+        "alwaysShowTitle": false,
+        "units": "%",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#d32f2f",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "60",
+                "color": "#f9a825",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "80",
+                "color": "#43a047",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": 100,
+        "sizeThickness": "",
+        "sizeGap": "",
+        "sizeKeyThickness": "",
+        "className": "",
+        "x": 370,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "w_units",
+        "type": "ui-text",
+        "z": "tab_plant_orch",
+        "group": "g_kpi",
+        "order": 2,
+        "width": 4,
+        "height": 3,
+        "name": "Units Today",
+        "label": "Units Today (all lines)",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": 32,
+        "color": "#ffffff",
+        "className": "",
+        "x": 370,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "w_alerts",
+        "type": "ui-text",
+        "z": "tab_plant_orch",
+        "group": "g_kpi",
+        "order": 3,
+        "width": 4,
+        "height": 3,
+        "name": "Active Alerts",
+        "label": "Lines Down / Alerts",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": 32,
+        "color": "#e0115f",
+        "className": "",
+        "x": 370,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "w_table",
+        "type": "ui-table",
+        "z": "tab_plant_orch",
+        "group": "g_lines",
+        "name": "Lines",
+        "label": "",
+        "order": 1,
+        "width": "0",
+        "height": "0",
+        "maxrows": "20",
+        "passthru": false,
+        "autocols": true,
+        "showSearch": false,
+        "deselect": true,
+        "selectionType": "none",
+        "columns": [],
+        "mobileBreakpoint": "lg",
+        "mobileBreakpointType": "defaults",
+        "action": "append",
+        "className": "",
+        "x": 350,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "w_chart",
+        "type": "ui-chart",
+        "z": "tab_plant_orch",
+        "group": "g_chart",
+        "name": "OEE Trend",
+        "label": "OEE by line (%)",
+        "order": 1,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "time",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "",
+        "yAxisProperty": "",
+        "yAxisPropertyType": "property",
+        "ymin": "0",
+        "ymax": "100",
+        "bins": "",
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": true,
+        "removeOlder": "5",
+        "removeOlderUnit": "60",
+        "removeOlderPoints": "",
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 8,
+        "height": 6,
+        "className": "",
+        "interpolation": "linear",
+        "x": 370,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "w_events",
+        "type": "ui-table",
+        "z": "tab_plant_orch",
+        "group": "g_events",
+        "name": "Events",
+        "label": "",
+        "order": 1,
+        "width": "0",
+        "height": "0",
+        "maxrows": "20",
+        "passthru": false,
+        "autocols": true,
+        "showSearch": false,
+        "deselect": true,
+        "selectionType": "none",
+        "columns": [],
+        "mobileBreakpoint": "",
+        "mobileBreakpointType": "none",
+        "action": "append",
+        "className": "",
+        "x": 350,
+        "y": 280,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "w_recipe",
+        "type": "ui-dropdown",
+        "z": "tab_plant_orch",
+        "group": "g_control",
+        "label": "Line 1 Recipe",
+        "tooltip": "",
+        "order": 1,
+        "width": 4,
+        "height": 1,
+        "multiple": false,
+        "options": [
+            {
+                "label": "Door Panel A",
+                "value": "Door Panel A"
+            },
+            {
+                "label": "Hood Assembly C",
+                "value": "Hood Assembly C"
+            },
+            {
+                "label": "Fender D",
+                "value": "Fender D"
+            }
+        ],
+        "payload": "",
+        "topic": "recipe",
+        "topicType": "str",
+        "className": "",
+        "x": 140,
+        "y": 200,
+        "wires": [
+            [
+                "n_recipe"
+            ]
+        ]
+    },
+    {
+        "id": "w_batch_btn",
+        "type": "ui-button",
+        "z": "tab_plant_orch",
+        "group": "g_control",
+        "label": "▶  Run Production Batch",
+        "order": 2,
+        "width": 4,
+        "height": 1,
+        "tooltip": "Run one batch across all 3 lines with automatic handoffs",
+        "color": "#ffffff",
+        "bgcolor": "#43a047",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "start",
+        "payloadType": "str",
+        "topic": "cmd",
+        "topicType": "str",
+        "x": 170,
+        "y": 320,
+        "wires": [
+            [
+                "n_cmd"
+            ]
+        ]
+    },
+    {
+        "id": "w_reset_btn",
+        "type": "ui-button",
+        "z": "tab_plant_orch",
+        "group": "g_control",
+        "label": "Reset Demo",
+        "order": 3,
+        "width": 4,
+        "height": 1,
+        "tooltip": "Clear all state and start over",
+        "color": "#ffffff",
+        "bgcolor": "#546e7a",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "reset",
+        "payloadType": "str",
+        "topic": "cmd",
+        "topicType": "str",
+        "x": 130,
+        "y": 360,
+        "wires": [
+            [
+                "n_cmd"
+            ]
+        ]
+    },
+    {
+        "id": "n_tick",
+        "type": "inject",
+        "z": "tab_plant_orch",
+        "name": "Plant Poll (3s)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "3",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "0.5",
+        "topic": "tick",
+        "payload": "tick",
+        "payloadType": "str",
+        "x": 140,
+        "y": 40,
+        "wires": [
+            [
+                "n_sim"
+            ]
+        ]
+    },
+    {
+        "id": "n_sim",
+        "type": "function",
+        "z": "tab_plant_orch",
+        "name": "Plant Simulator",
+        "func": "\n// ---------- Plant Orchestration Simulator ----------\nlet lines = flow.get('lines');\nif (!lines) {\n    lines = [\n        { Line: \"Line 1 - Stamping\",      Status: \"Running\", Recipe: \"Door Panel A\", OEE: 78, Units: 0, \"Quality %\": 99.1 },\n        { Line: \"Line 2 - Body Weld\",      Status: \"Running\", Recipe: \"Frame B\",      OEE: 83, Units: 0, \"Quality %\": 98.6 },\n        { Line: \"Line 3 - Final Assembly\", Status: \"Idle\",    Recipe: \"-\",            OEE: 0,  Units: 0, \"Quality %\": 0 }\n    ];\n}\nlet events     = flow.get('events') || [];\nlet batch      = flow.get('batch')  || { active:false, stage:0, ticks:0 };\nlet downtimers = flow.get('downtimers') || {};\n\nconst clamp = (v,lo,hi) => Math.max(lo, Math.min(hi, v));\nconst stamp = () => new Date().toLocaleTimeString();\nfunction addEvent(line, type, detail){\n    events.unshift({ Time: stamp(), Line: line, Type: type, Detail: detail });\n    if (events.length > 12) events.pop();\n}\n\n// --- normal drift + unplanned downtime ---\nlines.forEach((l, i) => {\n    if (l.Status === \"Running\") {\n        l.Units += Math.floor(Math.random()*3)+1;\n        l.OEE = Math.round(clamp(l.OEE + (Math.random()*4-2), 63, 94));\n        l[\"Quality %\"] = Math.round(clamp((l[\"Quality %\"]||98) + (Math.random()*0.4-0.2), 96, 99.9)*10)/10;\n        if (Math.random() < 0.03) {\n            l.Status = \"Down\";\n            l.OEE = Math.round(l.OEE*0.5);\n            downtimers[i] = 3;\n            addEvent(l.Line, \"Downtime\", \"Unplanned stop - fault detected\");\n        }\n    } else if (l.Status === \"Down\") {\n        if (downtimers[i] > 0) { downtimers[i]--; }\n        else { l.Status = \"Running\"; addEvent(l.Line, \"Recovery\", \"Line restarted, back to nominal\"); }\n    }\n});\n\n// --- automated quality check ---\nlines.forEach(l => {\n    if (l.Status === \"Running\" && Math.random() < 0.04) {\n        addEvent(l.Line, \"Quality\", \"Automated check flagged a part for rework\");\n    }\n});\n\n// --- cross-line batch orchestration (the handoff story) ---\nlet notify = null;\nif (batch.active) {\n    batch.ticks++;\n    if (batch.ticks >= 2) {\n        batch.ticks = 0;\n        batch.stage++;\n        if (batch.stage === 1) {\n            lines[0].Status = \"Running\";\n            addEvent(lines[0].Line, \"Batch\", \"Batch started - recipe \" + lines[0].Recipe);\n            notify = \"Batch started on \" + lines[0].Line;\n        } else if (batch.stage === 2) {\n            addEvent(lines[0].Line, \"Handoff\", \"Stamping complete -> handoff to Body Weld\");\n            lines[1].Status = \"Running\";\n            notify = \"Handoff: Line 1 -> Line 2 complete\";\n        } else if (batch.stage === 3) {\n            addEvent(lines[1].Line, \"Handoff\", \"Body Weld complete -> handoff to Final Assembly\");\n            lines[2].Status = \"Running\";\n            lines[2].Recipe = lines[0].Recipe;\n            lines[2].OEE = 80;\n            notify = \"Handoff: Line 2 -> Line 3 complete\";\n        } else {\n            addEvent(lines[2].Line, \"Complete\", \"Batch finished across all lines\");\n            notify = \"Production batch complete across all 3 lines\";\n            batch.active = false;\n            batch.stage = 0;\n        }\n    }\n}\n\n// --- persist state ---\nflow.set('lines', lines);\nflow.set('events', events);\nflow.set('batch', batch);\nflow.set('downtimers', downtimers);\n\n// --- derive plant KPIs ---\nlet running = lines.filter(l => l.Status === \"Running\");\nlet plantOEE = running.length ? Math.round(running.reduce((a,l)=>a+l.OEE,0)/running.length) : 0;\nlet unitsToday = lines.reduce((a,l)=>a+l.Units,0);\nlet activeAlerts = lines.filter(l => l.Status === \"Down\").length;\n\n// --- outputs ---\nlet chartMsgs = lines.map(l => ({ topic: l.Line, payload: l.OEE }));\nlet table = lines.map(l => ({\n    Line: l.Line, Status: l.Status, Recipe: l.Recipe,\n    OEE: l.OEE + \"%\", Units: l.Units, \"Quality %\": l[\"Quality %\"]\n}));\nlet notifyMsg = notify ? { payload: notify } : null;\n\nreturn [\n    { payload: plantOEE },\n    { payload: unitsToday },\n    { payload: activeAlerts },\n    { payload: table },\n    chartMsgs,\n    { payload: events },\n    notifyMsg\n];\n",
+        "outputs": 7,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 140,
+        "y": 120,
+        "wires": [
+            [
+                "w_oee"
+            ],
+            [
+                "w_units"
+            ],
+            [
+                "w_alerts"
+            ],
+            [
+                "w_table"
+            ],
+            [
+                "w_chart"
+            ],
+            [
+                "w_events"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "n_cmd",
+        "type": "function",
+        "z": "tab_plant_orch",
+        "name": "Command Handler",
+        "func": "\nif (msg.payload === \"start\") {\n    flow.set('batch', { active:true, stage:0, ticks:0 });\n    return { payload: \"Production batch queued...\" };\n}\nif (msg.payload === \"reset\") {\n    flow.set('lines', undefined);\n    flow.set('events', []);\n    flow.set('batch', { active:false, stage:0, ticks:0 });\n    flow.set('downtimers', {});\n    return { payload: \"Demo reset\" };\n}\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "n_recipe",
+        "type": "function",
+        "z": "tab_plant_orch",
+        "name": "Set Recipe",
+        "func": "\nlet lines = flow.get('lines');\nif (lines) {\n    lines[0].Recipe = msg.payload;\n    flow.set('lines', lines);\n}\nreturn { payload: \"Line 1 recipe set to \" + msg.payload };\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 130,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "9a3c989eed48fe74",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.30.2"
+        }
+    }
+]
