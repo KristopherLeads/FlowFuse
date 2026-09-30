@@ -1,0 +1,1169 @@
+[
+    {
+        "id": "c5b9f0ce9c6655ba",
+        "type": "tab",
+        "label": "0 · Warehouse schema (FlowFuse Tables)",
+        "disabled": false,
+        "info": "Creates the tables on start. Safe to re-run."
+    },
+    {
+        "id": "f59f7421280f09a1",
+        "type": "tab",
+        "label": "1 · SAP intake (ORDERS05)",
+        "disabled": false,
+        "info": "Validates every IDoc, maps SAP segment names to a canonical order, and parks anything malformed in a dead-letter table instead of letting it into the warehouse."
+    },
+    {
+        "id": "78f580bd25740492",
+        "type": "tab",
+        "label": "2 · Fulfilment (3PL REST API)",
+        "disabled": false,
+        "info": "Drains the queue into the 3PL API. Non-2xx responses back off exponentially (2 s ... 30 s) and retry; nothing is dropped while the API is down."
+    },
+    {
+        "id": "14cc8a94a89f5af0",
+        "type": "tab",
+        "label": "3 · Plant & field data (from Edge and Fleet)",
+        "disabled": false,
+        "info": "Edge sends one KPI record per line every 10 s; Fleet sends a fleet-health summary. Both land in the same warehouse the orders do."
+    },
+    {
+        "id": "fbac6702442aa75e",
+        "type": "tab",
+        "label": "4 · REST API for IT & BI",
+        "disabled": false,
+        "info": "GET /api/v1/orders, /api/v1/site-kpis, /api/v1/health. Point Power BI, a data warehouse loader, or another service at these."
+    },
+    {
+        "id": "31589870c3a4dc5a",
+        "type": "tab",
+        "label": "5 · Integration dashboard",
+        "disabled": false,
+        "info": "Dashboard at /dashboard."
+    },
+    {
+        "id": "d8dafb407f236d4f",
+        "type": "ui-theme",
+        "name": "FlowFuse",
+        "colors": {
+            "surface": "#ffffff",
+            "primary": "#4338CA",
+            "bgPage": "#F4F4F8",
+            "groupBg": "#ffffff",
+            "groupOutline": "#E4E4EC"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "14px",
+            "groupGap": "14px",
+            "groupBorderRadius": "10px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "ec6bd0d42b83ee62",
+        "type": "ui-base",
+        "name": "Northwind · Integration Hub",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "none",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": "4",
+        "showDisconnectNotification": true
+    },
+    {
+        "id": "1625aaedd4b50238",
+        "type": "ui-page",
+        "name": "Integration Hub",
+        "ui": "ec6bd0d42b83ee62",
+        "path": "/",
+        "icon": "hub",
+        "layout": "grid",
+        "theme": "d8dafb407f236d4f",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "53d660c1163d2360",
+        "type": "ui-group",
+        "name": "Overview",
+        "page": "1625aaedd4b50238",
+        "width": "12",
+        "height": "1",
+        "order": 1,
+        "showTitle": false,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "d89c091fb46b221b",
+        "type": "ui-group",
+        "name": "Queue",
+        "page": "1625aaedd4b50238",
+        "width": "12",
+        "height": "1",
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "2738405b7c2c75b6",
+        "type": "ui-group",
+        "name": "Orders",
+        "page": "1625aaedd4b50238",
+        "width": "12",
+        "height": "1",
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "ebaf28c4402a3175",
+        "type": "ui-group",
+        "name": "Dead letters",
+        "page": "1625aaedd4b50238",
+        "width": "12",
+        "height": "1",
+        "order": 4,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "d457c26514763cfd",
+        "type": "inject",
+        "z": "c5b9f0ce9c6655ba",
+        "name": "on start",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "2",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "ba3841863f934b61"
+            ]
+        ]
+    },
+    {
+        "id": "ba3841863f934b61",
+        "type": "function",
+        "z": "c5b9f0ce9c6655ba",
+        "name": "CREATE TABLE IF NOT EXISTS",
+        "func": "const ddl = [\n`CREATE TABLE IF NOT EXISTS ff3_orders (\n  order_id text PRIMARY KEY, docnum text, customer_id text, customer text,\n  sku_count int, units numeric, requested_date date, status text NOT NULL,\n  shipment_id text, carrier text, attempts int NOT NULL DEFAULT 0,\n  items jsonb, source text, received_at timestamptz NOT NULL DEFAULT now(),\n  shipped_at timestamptz)`,\n`CREATE TABLE IF NOT EXISTS ff3_dead_letter (\n  id bigserial PRIMARY KEY, docnum text, errors jsonb, raw jsonb,\n  received_at timestamptz NOT NULL DEFAULT now())`,\n`CREATE TABLE IF NOT EXISTS ff3_site_kpis (\n  id bigserial PRIMARY KEY, site text, site_name text, state text,\n  standard text, oee numeric, availability numeric, performance numeric,\n  quality numeric, recorded_at timestamptz NOT NULL DEFAULT now())`\n];\nreturn [ddl.map(q => ({ query: q }))];\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "d17df2bb18fbc188"
+            ]
+        ]
+    },
+    {
+        "id": "d17df2bb18fbc188",
+        "type": "tables-query",
+        "z": "c5b9f0ce9c6655ba",
+        "name": "Tables: schema",
+        "query": "SELECT 1",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 660,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e88bfed6cd3c780b",
+        "type": "comment",
+        "z": "f59f7421280f09a1",
+        "name": "SAP ECC -> Hub (project link: erp/idoc)",
+        "info": "",
+        "x": 180,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "57f377cab32d6efa",
+        "type": "project link in",
+        "z": "f59f7421280f09a1",
+        "name": "from SAP: erp/idoc",
+        "project": "",
+        "broadcast": false,
+        "topic": "erp/idoc",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "e1fce41d4237d7e0"
+            ]
+        ]
+    },
+    {
+        "id": "e1fce41d4237d7e0",
+        "type": "function",
+        "z": "f59f7421280f09a1",
+        "name": "validate + map ORDERS05",
+        "func": "// SAP ORDERS05 -> canonical order. Every rule that rejects a document is here.\nconst d = msg.payload && msg.payload.IDOC;\nconst errors = [];\nconst dc = (d && d.EDI_DC40) || {};\nif (!dc.DOCNUM) errors.push('EDI_DC40.DOCNUM missing');\nif (dc.IDOCTYP !== 'ORDERS05') errors.push(`unexpected IDOCTYP \"${dc.IDOCTYP}\"`);\nconst soldTo = ((d && d.E1EDKA1) || []).find(p => p.PARVW === 'AG');\nif (!soldTo) errors.push('no sold-to partner (E1EDKA1 PARVW=AG)');\nconst items = ((d && d.E1EDP01) || []).map(it => {\n    const mat = (it.E1EDP19 || []).find(x => x.QUALF === '002');\n    const qty = Number(it.MENGE);\n    if (!mat) errors.push(`item ${it.POSEX}: no material number (E1EDP19 QUALF=002)`);\n    if (!Number.isFinite(qty) || qty <= 0) errors.push(`item ${it.POSEX}: quantity \"${it.MENGE}\" is not a number`);\n    return { line: Number(it.POSEX), sku: mat && mat.IDTNR, description: mat && mat.KTEXT, qty, uom: it.MENEE };\n});\nif (!items.length) errors.push('no line items (E1EDP01)');\n\nif (errors.length) {\n    node.status({ fill: 'red', shape: 'ring', text: `rejected ${dc.DOCNUM || '?'}` });\n    return [null, { params: [dc.DOCNUM || null, JSON.stringify(errors), JSON.stringify(msg.payload)] }];\n}\nconst dat = ((d.E1EDK03 || []).find(x => x.IDDAT === '002') || {}).DATUM;\nconst order = {\n    orderId: d.E1EDK01.BELNR, docnum: dc.DOCNUM,\n    customerId: soldTo.PARTN, customer: soldTo.NAME1,\n    items, skuCount: items.length, units: items.reduce((s, i) => s + i.qty, 0),\n    requestedDate: dat ? `${dat.slice(0, 4)}-${dat.slice(4, 6)}-${dat.slice(6, 8)}` : null,\n    source: `SAP ECC ${dc.SNDPRN} (ORDERS05)`,\n};\nnode.status({ fill: 'green', shape: 'dot', text: `${order.orderId} ${order.customer}` });\nreturn [{ order, params: [order.orderId, order.docnum, order.customerId, order.customer, order.skuCount,\n                          order.units, order.requestedDate, JSON.stringify(order.items), order.source] }, null];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "626ac92ef22f9c83"
+            ],
+            [
+                "626c4d13aeb2920f"
+            ]
+        ]
+    },
+    {
+        "id": "626ac92ef22f9c83",
+        "type": "tables-query",
+        "z": "f59f7421280f09a1",
+        "name": "Tables: insert order",
+        "query": "INSERT INTO ff3_orders (order_id, docnum, customer_id, customer, sku_count, units, requested_date, status, items, source) VALUES ($1, $2, $3, $4, $5, $6, $7::date, 'received', $8::jsonb, $9) ON CONFLICT (order_id) DO NOTHING RETURNING order_id",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 660,
+        "y": 120,
+        "wires": [
+            [
+                "eba2d8ae2da51211"
+            ]
+        ]
+    },
+    {
+        "id": "eba2d8ae2da51211",
+        "type": "function",
+        "z": "f59f7421280f09a1",
+        "name": "enqueue for fulfilment",
+        "func": "// Only enqueue orders the database actually accepted (idempotent on order_id).\nif (!Array.isArray(msg.payload) || !msg.payload.length) return null;\nconst q = global.get('hub_queue') || [];\nq.push({ ...msg.order, attempts: 0, nextAt: 0 });\nglobal.set('hub_queue', q);\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "626c4d13aeb2920f",
+        "type": "tables-query",
+        "z": "f59f7421280f09a1",
+        "name": "Tables: dead-letter",
+        "query": "INSERT INTO ff3_dead_letter (docnum, errors, raw) VALUES ($1, $2::jsonb, $3::jsonb)",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 660,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "b3b182f6cc383d9d",
+        "type": "inject",
+        "z": "78f580bd25740492",
+        "name": "every 1 s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "1",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "b0a571fdfb71be61"
+            ]
+        ]
+    },
+    {
+        "id": "b0a571fdfb71be61",
+        "type": "function",
+        "z": "78f580bd25740492",
+        "name": "next order due",
+        "func": "// Take the next order that is due. One call per tick keeps the demo readable.\nconst q = global.get('hub_queue') || [];\nconst now = Date.now();\nconst i = q.findIndex(o => o.nextAt <= now);\nif (i < 0) return null;\nconst o = q.splice(i, 1)[0];\nglobal.set('hub_queue', q);\nmsg.order = o;\nmsg.headers = { 'content-type': 'application/json' };\nmsg.payload = { orderId: o.orderId, customer: o.customer, requestedDate: o.requestedDate,\n                lines: o.items.map(it => ({ sku: it.sku, qty: it.qty, uom: it.uom })) };\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "f17ba227c4e3548c"
+            ]
+        ]
+    },
+    {
+        "id": "f17ba227c4e3548c",
+        "type": "http request",
+        "z": "78f580bd25740492",
+        "name": "POST 3PL /shipments",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "https://ff3-demo-sim.flowfuse.cloud/api/3pl/shipments",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 660,
+        "y": 120,
+        "wires": [
+            [
+                "1291468aa5e16972"
+            ]
+        ]
+    },
+    {
+        "id": "1291468aa5e16972",
+        "type": "function",
+        "z": "78f580bd25740492",
+        "name": "shipped or back off",
+        "func": "// 2xx -> shipped. Anything else -> back off and requeue.\nconst o = msg.order;\no.attempts += 1;\nconst api = global.get('hub_api') || {};\nif (msg.statusCode >= 200 && msg.statusCode < 300 && msg.payload && msg.payload.shipmentId) {\n    global.set('hub_api', { status: 'UP', lastOkAt: Date.now(), lastError: api.lastError || '' });\n    node.status({ fill: 'green', shape: 'dot', text: `${o.orderId} -> ${msg.payload.shipmentId}` });\n    return [{ params: [o.orderId, msg.payload.shipmentId, msg.payload.carrier, o.attempts] }, null];\n}\nconst backoff = Math.min(30000, 2000 * Math.pow(2, o.attempts - 1));\no.nextAt = Date.now() + backoff;\nconst q = global.get('hub_queue') || [];\nq.push(o);\nglobal.set('hub_queue', q);\nconst err = `${msg.statusCode || 'network'} ${(msg.payload && msg.payload.error) || ''}`.trim();\nglobal.set('hub_api', { status: 'DOWN', lastOkAt: api.lastOkAt, lastError: err, since: api.status === 'DOWN' ? api.since : Date.now() });\nnode.status({ fill: 'red', shape: 'ring', text: `${o.orderId} ${err}, retry in ${backoff / 1000}s` });\nreturn [null, { params: [o.orderId, o.attempts] }];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 120,
+        "wires": [
+            [
+                "1a554abc111bff83"
+            ],
+            [
+                "34b35440ff1da00e"
+            ]
+        ]
+    },
+    {
+        "id": "1a554abc111bff83",
+        "type": "tables-query",
+        "z": "78f580bd25740492",
+        "name": "Tables: mark shipped",
+        "query": "UPDATE ff3_orders SET status = 'shipped', shipment_id = $2, carrier = $3, attempts = $4, shipped_at = now() WHERE order_id = $1",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 1140,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "34b35440ff1da00e",
+        "type": "tables-query",
+        "z": "78f580bd25740492",
+        "name": "Tables: mark retrying",
+        "query": "UPDATE ff3_orders SET status = 'retrying', attempts = $2 WHERE order_id = $1",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 1140,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "24d25eb2c98356d4",
+        "type": "inject",
+        "z": "78f580bd25740492",
+        "name": "on start",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "6",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 240,
+        "wires": [
+            [
+                "61cca93088b89044"
+            ]
+        ]
+    },
+    {
+        "id": "61cca93088b89044",
+        "type": "function",
+        "z": "78f580bd25740492",
+        "name": "reload unshipped orders",
+        "func": "// On restart, put anything not yet shipped back in the queue.\nreturn { query: \"SELECT order_id AS \\\"orderId\\\", customer, requested_date::text AS \\\"requestedDate\\\", items, attempts FROM ff3_orders WHERE status <> 'shipped' ORDER BY received_at\" };\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 240,
+        "wires": [
+            [
+                "d6c5c5d32d61ce74"
+            ]
+        ]
+    },
+    {
+        "id": "d6c5c5d32d61ce74",
+        "type": "tables-query",
+        "z": "78f580bd25740492",
+        "name": "Tables: unshipped",
+        "query": "SELECT 1",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 660,
+        "y": 240,
+        "wires": [
+            [
+                "d2a761d563ac1022"
+            ]
+        ]
+    },
+    {
+        "id": "d2a761d563ac1022",
+        "type": "function",
+        "z": "78f580bd25740492",
+        "name": "rebuild queue",
+        "func": "const q = (msg.payload || []).map(o => ({ ...o, nextAt: 0 }));\nglobal.set('hub_queue', q);\nnode.status({ text: `recovered ${q.length} unshipped orders` });\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5ea7cbdfceba2ff3",
+        "type": "project link in",
+        "z": "14cc8a94a89f5af0",
+        "name": "from Edge: kpi/oee",
+        "project": "",
+        "broadcast": false,
+        "topic": "kpi/oee",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "fb8801ed6bcb7953"
+            ]
+        ]
+    },
+    {
+        "id": "fb8801ed6bcb7953",
+        "type": "function",
+        "z": "14cc8a94a89f5af0",
+        "name": "site KPIs",
+        "func": "global.set('hub_sites', msg.payload);\nglobal.set('hub_sites_at', Date.now());\nreturn { params: [JSON.stringify(msg.payload)] };\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "dc1683819c26e2bb"
+            ]
+        ]
+    },
+    {
+        "id": "dc1683819c26e2bb",
+        "type": "tables-query",
+        "z": "14cc8a94a89f5af0",
+        "name": "Tables: site KPIs",
+        "query": "INSERT INTO ff3_site_kpis (site, site_name, state, standard, oee, availability, performance, quality) SELECT site, site_name, state, standard, oee, availability, performance, quality FROM jsonb_to_recordset($1::jsonb) AS x(site text, site_name text, state text, standard text, oee numeric, availability numeric, performance numeric, quality numeric)",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 660,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "615d76d29633d84c",
+        "type": "project link in",
+        "z": "14cc8a94a89f5af0",
+        "name": "from Fleet: fleet/summary",
+        "project": "",
+        "broadcast": false,
+        "topic": "fleet/summary",
+        "x": 180,
+        "y": 180,
+        "wires": [
+            [
+                "013c41d60a7c1c53"
+            ]
+        ]
+    },
+    {
+        "id": "013c41d60a7c1c53",
+        "type": "function",
+        "z": "14cc8a94a89f5af0",
+        "name": "fleet health",
+        "func": "global.set('hub_fleet', { ...msg.payload, at: Date.now() });\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4ddf4ab539493dcb",
+        "type": "http in",
+        "z": "fbac6702442aa75e",
+        "name": "",
+        "url": "/api/v1/orders",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "f7791aa3d337f117"
+            ]
+        ]
+    },
+    {
+        "id": "f7791aa3d337f117",
+        "type": "tables-query",
+        "z": "fbac6702442aa75e",
+        "name": "Tables: latest orders",
+        "query": "SELECT order_id, customer, sku_count, units, requested_date, status, shipment_id, carrier, attempts, received_at, shipped_at FROM ff3_orders ORDER BY received_at DESC LIMIT 50",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "f5002fd42b23e2fb"
+            ]
+        ]
+    },
+    {
+        "id": "f5002fd42b23e2fb",
+        "type": "http response",
+        "z": "fbac6702442aa75e",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 660,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "c5c15bf591bb21db",
+        "type": "http in",
+        "z": "fbac6702442aa75e",
+        "name": "",
+        "url": "/api/v1/site-kpis",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 180,
+        "y": 180,
+        "wires": [
+            [
+                "d373accefbc5d16e"
+            ]
+        ]
+    },
+    {
+        "id": "d373accefbc5d16e",
+        "type": "tables-query",
+        "z": "fbac6702442aa75e",
+        "name": "Tables: latest KPI per site",
+        "query": "SELECT DISTINCT ON (site) site, site_name, state, standard, oee, availability, performance, quality, recorded_at FROM ff3_site_kpis ORDER BY site, recorded_at DESC",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 420,
+        "y": 180,
+        "wires": [
+            [
+                "31ef98afc7792cd9"
+            ]
+        ]
+    },
+    {
+        "id": "31ef98afc7792cd9",
+        "type": "http response",
+        "z": "fbac6702442aa75e",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 660,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "6079ec0ecb078214",
+        "type": "http in",
+        "z": "fbac6702442aa75e",
+        "name": "",
+        "url": "/api/v1/health",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 180,
+        "y": 240,
+        "wires": [
+            [
+                "8ab1b44dda2b4952"
+            ]
+        ]
+    },
+    {
+        "id": "8ab1b44dda2b4952",
+        "type": "function",
+        "z": "fbac6702442aa75e",
+        "name": "health",
+        "func": "const api = global.get('hub_api') || { status: 'UNKNOWN' };\nmsg.payload = { status: 'ok', queueDepth: (global.get('hub_queue') || []).length,\n                fulfilmentApi: api.status, lastError: api.lastError || null,\n                edgeLastSeen: global.get('hub_sites_at') || null, fleet: global.get('hub_fleet') || null };\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 240,
+        "wires": [
+            [
+                "d1ffea5b209daf62"
+            ]
+        ]
+    },
+    {
+        "id": "d1ffea5b209daf62",
+        "type": "http response",
+        "z": "fbac6702442aa75e",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 660,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "137ab13bdd1fc8ef",
+        "type": "inject",
+        "z": "31589870c3a4dc5a",
+        "name": "every 3 s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "3",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "8",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "2aebe1ecb1985809",
+                "de0ae5551b5fcdf2",
+                "76ea514636534eef"
+            ]
+        ]
+    },
+    {
+        "id": "2aebe1ecb1985809",
+        "type": "tables-query",
+        "z": "31589870c3a4dc5a",
+        "name": "Tables: counts",
+        "query": "SELECT (SELECT count(*) FROM ff3_orders)::int AS received, (SELECT count(*) FROM ff3_orders WHERE status = 'shipped')::int AS shipped, (SELECT count(*) FROM ff3_orders WHERE status <> 'shipped')::int AS pending, (SELECT count(*) FROM ff3_dead_letter)::int AS dead_letters, (SELECT count(*) FROM ff3_site_kpis)::int AS kpi_rows",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "5ce818b1d9855e78"
+            ]
+        ]
+    },
+    {
+        "id": "5ce818b1d9855e78",
+        "type": "function",
+        "z": "31589870c3a4dc5a",
+        "name": "overview",
+        "func": "const s = (msg.payload && msg.payload[0]) || {};\nconst api = global.get('hub_api') || { status: 'UNKNOWN' };\nconst q = global.get('hub_queue') || [];\nreturn [{ payload: { ...s, queue: q.length, api, sites: global.get('hub_sites') || [],\n                     fleet: global.get('hub_fleet') || null } },\n        { topic: 'Queue depth', payload: q.length }];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 120,
+        "wires": [
+            [
+                "1d919c29492c033a"
+            ],
+            [
+                "e488869367cb7af0"
+            ]
+        ]
+    },
+    {
+        "id": "1d919c29492c033a",
+        "type": "ui-template",
+        "z": "31589870c3a4dc5a",
+        "group": "53d660c1163d2360",
+        "page": "",
+        "ui": "",
+        "name": "overview",
+        "order": 1,
+        "width": "12",
+        "height": "0",
+        "head": "",
+        "format": "<template>\n  <div v-if=\"msg?.payload\">\n    <div class=\"kpis\">\n      <div class=\"k\"><div class=\"n\">{{ msg.payload.received ?? 0 }}</div><div class=\"l\">Orders from SAP</div></div>\n      <div class=\"k\"><div class=\"n ok\">{{ msg.payload.shipped ?? 0 }}</div><div class=\"l\">Shipped via 3PL</div></div>\n      <div class=\"k\"><div :class=\"['n', msg.payload.queue ? 'warn' : '']\">{{ msg.payload.queue }}</div><div class=\"l\">In queue / retrying</div></div>\n      <div class=\"k\"><div :class=\"['n', msg.payload.dead_letters ? 'bad' : '']\">{{ msg.payload.dead_letters ?? 0 }}</div><div class=\"l\">Dead-lettered IDocs</div></div>\n      <div class=\"k\"><div :class=\"['n', msg.payload.api?.status === 'UP' ? 'ok' : msg.payload.api?.status === 'DOWN' ? 'bad' : '']\">{{ msg.payload.api?.status }}</div><div class=\"l\">3PL API <span v-if=\"msg.payload.api?.status === 'DOWN'\">· {{ msg.payload.api.lastError }}</span></div></div>\n    </div>\n    <div class=\"row\">\n      <div class=\"panel\">\n        <div class=\"t\">Plants (from <b>Edge</b>)</div>\n        <div v-if=\"!msg.payload.sites.length\" class=\"muted\">waiting for first KPI record…</div>\n        <div v-for=\"s in msg.payload.sites\" :key=\"s.site\" class=\"site\">\n          <span>{{ s.site_name }}</span><span :class=\"['st', s.state]\">{{ s.state }}</span>\n          <b>{{ (s.oee * 100).toFixed(1) }}%</b><span class=\"muted\">{{ s.standard }}</span>\n        </div>\n      </div>\n      <div class=\"panel\">\n        <div class=\"t\">Field fleet (from <b>Fleet</b>)</div>\n        <div v-if=\"!msg.payload.fleet\" class=\"muted\">waiting for first fleet summary…</div>\n        <template v-else>\n          <div class=\"site\"><span>Online</span><b>{{ msg.payload.fleet.online }} / {{ msg.payload.fleet.total }}</b></div>\n          <div class=\"site\"><span>Healthy</span><b>{{ msg.payload.fleet.healthy }}</b></div>\n          <div class=\"site\"><span>Versions</span><span><span v-for=\"(n, v) in msg.payload.fleet.versions\" :key=\"v\" class=\"ver\">{{ v }} × {{ n }}</span></span></div>\n        </template>\n      </div>\n    </div>\n    <div class=\"foot\"><button @click=\"send({ payload: { action: 'reset' } })\">Reset demo data</button></div>\n  </div>\n</template>\n<style scoped>\n.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }\n.k { border: 1px solid #E4E4EC; border-radius: 10px; padding: 12px 14px; background: #fff; }\n.n { font-size: 30px; font-weight: 800; } .l { font-size: 12px; color: #6B6B80; }\n.ok { color: #059669; } .warn { color: #D97706; } .bad { color: #DC2626; }\n.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 12px; }\n.panel { border: 1px solid #E4E4EC; border-radius: 10px; padding: 12px 14px; background: #fff; }\n.t { font-size: 13px; color: #33334A; margin-bottom: 6px; }\n.site { display: grid; grid-template-columns: 1.4fr 1fr .8fr .6fr; gap: 8px; padding: 5px 0; border-bottom: 1px solid #F0F0F5; font-size: 13px; align-items: center; }\n.st { font-size: 11px; font-weight: 700; color: #065F46; } .st.IDLE { color: #92400E; } .st.FAULTED { color: #991B1B; }\n.ver { margin-right: 8px; } .muted { color: #9090A4; font-size: 12px; }\n.foot { text-align: right; margin-top: 8px; }\n.foot button { background: none; border: 1px solid #D4D4DE; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #6B6B80; cursor: pointer; }\n</style>\n",
+        "storeOutMessages": true,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 900,
+        "y": 120,
+        "wires": [
+            [
+                "c11f9e65f915557a"
+            ]
+        ]
+    },
+    {
+        "id": "c11f9e65f915557a",
+        "type": "function",
+        "z": "31589870c3a4dc5a",
+        "name": "reset demo data",
+        "func": "if (!msg.payload || msg.payload.action !== 'reset') return null;\nglobal.set('hub_queue', []);\nglobal.set('hub_api', { status: 'UNKNOWN' });\nreturn { query: 'TRUNCATE ff3_orders, ff3_dead_letter, ff3_site_kpis' };\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1140,
+        "y": 120,
+        "wires": [
+            [
+                "334eaa80ac358360"
+            ]
+        ]
+    },
+    {
+        "id": "334eaa80ac358360",
+        "type": "tables-query",
+        "z": "31589870c3a4dc5a",
+        "name": "Tables: truncate",
+        "query": "SELECT 1",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 1380,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e488869367cb7af0",
+        "type": "ui-chart",
+        "z": "31589870c3a4dc5a",
+        "group": "d89c091fb46b221b",
+        "name": "Fulfilment queue depth",
+        "label": "Fulfilment queue depth",
+        "order": 3,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "orders",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "0",
+        "ymax": "",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "false",
+        "pointRadius": 2,
+        "showLegend": true,
+        "removeOlder": 10,
+        "removeOlderUnit": "60",
+        "removeOlderPoints": "",
+        "colors": [
+            "#4338CA",
+            "#F97316",
+            "#10B981",
+            "#A855F7",
+            "#EF4444",
+            "#0EA5E9",
+            "#EAB308",
+            "#64748B",
+            "#EC4899"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": "12",
+        "height": "4",
+        "className": "",
+        "interpolation": "linear",
+        "x": 900,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "de0ae5551b5fcdf2",
+        "type": "tables-query",
+        "z": "31589870c3a4dc5a",
+        "name": "Tables: recent orders",
+        "query": "SELECT order_id, customer, units, status, shipment_id, carrier, attempts, to_char(received_at, 'HH24:MI:SS') AS received FROM ff3_orders ORDER BY received_at DESC LIMIT 10",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 420,
+        "y": 240,
+        "wires": [
+            [
+                "7312667e6cb28adf"
+            ]
+        ]
+    },
+    {
+        "id": "7312667e6cb28adf",
+        "type": "ui-table",
+        "z": "31589870c3a4dc5a",
+        "group": "2738405b7c2c75b6",
+        "name": "Latest orders (FlowFuse Tables)",
+        "label": "Latest orders (FlowFuse Tables)",
+        "order": 2,
+        "width": "12",
+        "height": "0",
+        "maxrows": 0,
+        "passthru": false,
+        "autocols": false,
+        "showSearch": false,
+        "deselect": true,
+        "selectionType": "none",
+        "columns": [
+            {
+                "title": "Order",
+                "key": "order_id",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Customer",
+                "key": "customer",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Units",
+                "key": "units",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Status",
+                "key": "status",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Shipment",
+                "key": "shipment_id",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Carrier",
+                "key": "carrier",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Attempts",
+                "key": "attempts",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Received",
+                "key": "received",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            }
+        ],
+        "mobileBreakpoint": "sm",
+        "mobileBreakpointType": "defaults",
+        "action": "replace",
+        "x": 660,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "76ea514636534eef",
+        "type": "tables-query",
+        "z": "31589870c3a4dc5a",
+        "name": "Tables: dead letters",
+        "query": "SELECT docnum, (SELECT string_agg(e, '; ') FROM jsonb_array_elements_text(errors) AS e) AS errors, to_char(received_at, 'HH24:MI:SS') AS received FROM ff3_dead_letter ORDER BY id DESC LIMIT 6",
+        "split": false,
+        "rowsPerMsg": 1,
+        "x": 420,
+        "y": 300,
+        "wires": [
+            [
+                "40d2e910d3cf35c5"
+            ]
+        ]
+    },
+    {
+        "id": "40d2e910d3cf35c5",
+        "type": "ui-table",
+        "z": "31589870c3a4dc5a",
+        "group": "ebaf28c4402a3175",
+        "name": "Dead-lettered IDocs",
+        "label": "Dead-lettered IDocs",
+        "order": 2,
+        "width": "12",
+        "height": "0",
+        "maxrows": 0,
+        "passthru": false,
+        "autocols": false,
+        "showSearch": false,
+        "deselect": true,
+        "selectionType": "none",
+        "columns": [
+            {
+                "title": "DOCNUM",
+                "key": "docnum",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Why it was rejected",
+                "key": "errors",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Received",
+                "key": "received",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            }
+        ],
+        "mobileBreakpoint": "sm",
+        "mobileBreakpointType": "defaults",
+        "action": "replace",
+        "x": 660,
+        "y": 300,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7b333fbb4a4469b1",
+        "type": "catch",
+        "z": "31589870c3a4dc5a",
+        "name": "Tables / HTTP errors",
+        "scope": null,
+        "uncaught": false,
+        "x": 180,
+        "y": 420,
+        "wires": [
+            [
+                "7218ad5ba2629996"
+            ]
+        ]
+    },
+    {
+        "id": "7218ad5ba2629996",
+        "type": "debug",
+        "z": "31589870c3a4dc5a",
+        "name": "errors",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 420,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "da7212020402da85",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.32.0",
+            "@flowfuse/nr-tables-nodes": "0.3.1",
+            "@flowfuse/nr-project-nodes": "0.7.9"
+        }
+    }
+]
