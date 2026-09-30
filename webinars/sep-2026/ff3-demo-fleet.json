@@ -1,0 +1,419 @@
+[
+    {
+        "id": "adee7775dd4ab406",
+        "type": "tab",
+        "label": "1 · Field telemetry & registry",
+        "disabled": false,
+        "info": "Every unit's last report, keyed by unit id. A unit that has not reported for 15 s is offline."
+    },
+    {
+        "id": "be3fa0bc0eaf703d",
+        "type": "tab",
+        "label": "2 · Rollout manager",
+        "disabled": false,
+        "info": "Deploy a flow version to a group of units, watch it land, roll back a single unit. Offline units pick the update up when they reconnect."
+    },
+    {
+        "id": "4f4d1be2771b5eb5",
+        "type": "tab",
+        "label": "3 · Fleet console",
+        "disabled": false,
+        "info": "Dashboard at /dashboard."
+    },
+    {
+        "id": "3efb110d1b265988",
+        "type": "tab",
+        "label": "4 · Fleet summary to Hub",
+        "disabled": false,
+        "info": "Every 10 s the enterprise Hub gets one fleet-health record."
+    },
+    {
+        "id": "9e952e8ba395e2cb",
+        "type": "ui-theme",
+        "name": "FlowFuse",
+        "colors": {
+            "surface": "#ffffff",
+            "primary": "#4338CA",
+            "bgPage": "#F4F4F8",
+            "groupBg": "#ffffff",
+            "groupOutline": "#E4E4EC"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "14px",
+            "groupGap": "14px",
+            "groupBorderRadius": "10px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "d626e0cf7e422c3d",
+        "type": "ui-base",
+        "name": "Northwind Energy · Field Fleet",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "none",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": "4",
+        "showDisconnectNotification": true
+    },
+    {
+        "id": "33746855568366a1",
+        "type": "ui-page",
+        "name": "Fleet console",
+        "ui": "d626e0cf7e422c3d",
+        "path": "/",
+        "icon": "radio-tower",
+        "layout": "grid",
+        "theme": "9e952e8ba395e2cb",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "e9c70293b5e6c137",
+        "type": "ui-group",
+        "name": "Fleet",
+        "page": "33746855568366a1",
+        "width": "12",
+        "height": "1",
+        "order": 1,
+        "showTitle": false,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "57b2fbfd0fe46e74",
+        "type": "project link in",
+        "z": "adee7775dd4ab406",
+        "name": "from field: field/telemetry",
+        "project": "",
+        "broadcast": false,
+        "topic": "field/telemetry",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "17be39fd57731943"
+            ]
+        ]
+    },
+    {
+        "id": "17be39fd57731943",
+        "type": "function",
+        "z": "adee7775dd4ab406",
+        "name": "fleet registry + health alerts",
+        "func": "const reg = global.get('fleet_units') || {};\nconst now = Date.now();\nfor (const u of msg.payload) {\n    const prev = reg[u.unit];\n    reg[u.unit] = { ...u, lastSeen: now };\n    // Health alert: a unit that starts erroring right after a version change.\n    if (u.errorsPerMin > 0 && (!prev || !prev.errorsPerMin)) {\n        const log = global.get('fleet_log') || [];\n        log.unshift({ ts: now, kind: 'alert', text: `${u.unit} (${u.region}, board ${u.board}) is failing on ${u.version}: ${u.lastError}` });\n        global.set('fleet_log', log.slice(0, 30));\n        node.send([null, { payload: `${u.unit} failing on ${u.version}: ${u.lastError}` }]);\n    }\n    if (prev && prev.version !== u.version) {\n        const log = global.get('fleet_log') || [];\n        log.unshift({ ts: now, kind: 'landed', text: `${u.unit} now running ${u.version}` });\n        global.set('fleet_log', log.slice(0, 30));\n    }\n}\nglobal.set('fleet_units', reg);\nnode.status({ text: `${msg.payload.length} units reported` });\nreturn null;\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [],
+            [
+                "bd26a4dc904e40b5"
+            ]
+        ]
+    },
+    {
+        "id": "bd26a4dc904e40b5",
+        "type": "link out",
+        "z": "adee7775dd4ab406",
+        "name": "alerts -> console",
+        "mode": "link",
+        "links": [
+            "22fce0a5f28b2f56"
+        ],
+        "x": 660,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "be784413202816cd",
+        "type": "link in",
+        "z": "be3fa0bc0eaf703d",
+        "name": "console actions",
+        "links": [
+            "58b195022346d158"
+        ],
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "52e1111da7c41353"
+            ]
+        ]
+    },
+    {
+        "id": "52e1111da7c41353",
+        "type": "function",
+        "z": "be3fa0bc0eaf703d",
+        "name": "rollout planner",
+        "func": "// Turn a console action into a deploy command for a set of units.\nconst NEW = 'v2.4.0', OLD = 'v2.3.0';\nconst CANARY = ['FU-001', 'FU-002', 'FU-003'];\nconst reg = global.get('fleet_units') || {};\nconst all = Object.keys(reg).sort();\nconst a = msg.payload || {};\nlet units = [], version, label;\nif (a.action === 'canary')        { units = CANARY; version = NEW; label = `Deploy ${NEW} -> Canary group (${units.length} units)`; }\nelse if (a.action === 'all')      { units = all; version = NEW; label = `Deploy ${NEW} -> All field units (${units.length})`; }\nelse if (a.action === 'rollback') { units = [a.unit]; version = OLD; label = `Roll back ${a.unit} -> ${OLD}`; }\nelse if (a.action === 'rollback_all') { units = all; version = OLD; label = `Roll back all units -> ${OLD}`; }\nelse return null;\n\nconst by = (msg._client && msg._client.user && (msg._client.user.name || msg._client.user.username)) || 'fleet operator';\nglobal.set('fleet_rollout', { label, version, units, startedAt: Date.now(), by });\nconst log = global.get('fleet_log') || [];\nlog.unshift({ ts: Date.now(), kind: 'deploy', text: `${label} · by ${by}` });\nglobal.set('fleet_log', log.slice(0, 30));\nnode.status({ fill: 'blue', shape: 'dot', text: label });\nreturn { payload: { action: 'deploy', version, units } };\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "b0da53e5eeac1f3e"
+            ]
+        ]
+    },
+    {
+        "id": "b0da53e5eeac1f3e",
+        "type": "project link out",
+        "z": "be3fa0bc0eaf703d",
+        "name": "to field: field/cmd",
+        "mode": "link",
+        "broadcast": false,
+        "project": "3de865b2-f619-4be4-b3b9-966b06f27ca8",
+        "topic": "field/cmd",
+        "x": 660,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "48297a2c26af4cfe",
+        "type": "inject",
+        "z": "4f4d1be2771b5eb5",
+        "name": "every 2 s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "2",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "3",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "f7ec136af560e90c"
+            ]
+        ]
+    },
+    {
+        "id": "f7ec136af560e90c",
+        "type": "function",
+        "z": "4f4d1be2771b5eb5",
+        "name": "fleet view",
+        "func": "const reg = global.get('fleet_units') || {};\nconst ro = global.get('fleet_rollout') || null;\nconst now = Date.now();\nconst units = Object.values(reg).sort((a, b) => a.unit.localeCompare(b.unit)).map(u => {\n    const offline = now - u.lastSeen > 15000;\n    const health = offline ? 'offline' : u.status === 'updating' ? 'updating' : u.errorsPerMin > 0 ? 'error' : 'healthy';\n    return { unit: u.unit, region: u.region, version: u.version, board: u.board, health,\n             rssi: u.rssi, battery: u.battery, psi: u.pressurePsi, bytes: u.bytesPerMsg,\n             errors: u.errorsPerMin, lastError: u.lastError, ago: Math.round((now - u.lastSeen) / 1000) };\n});\nconst count = h => units.filter(u => u.health === h).length;\nconst versions = units.reduce((m, u) => (m[u.version] = (m[u.version] || 0) + 1, m), {});\nconst live = units.filter(u => u.health !== 'offline');\nconst avgBytes = live.length ? live.reduce((s, u) => s + u.bytes, 0) / live.length : 0;\n// Cellular data at 3,000 units, one report every 5 s, 30 days.\nconst gbPerMonthAt3000 = avgBytes * (86400 / 5) * 30 * 3000 / 1e9;\nlet rollout = null;\nif (ro) {\n    const targeted = ro.units.filter(id => reg[id]);\n    const landed = targeted.filter(id => reg[id].version === ro.version).length;\n    rollout = { label: ro.label, by: ro.by, total: targeted.length, landed, pct: targeted.length ? landed / targeted.length : 0,\n                waitingOffline: targeted.filter(id => reg[id].version !== ro.version && now - reg[id].lastSeen > 15000) };\n}\nconst summary = { total: units.length, online: units.length - count('offline'), healthy: count('healthy'),\n                  errors: count('error'), updating: count('updating'), versions };\nreturn [{ payload: { units, summary, rollout, avgBytes: Math.round(avgBytes), gbPerMonthAt3000,\n                     log: (global.get('fleet_log') || []).slice(0, 12) } },\n        { payload: summary }];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "e39378439ccbb582"
+            ],
+            [
+                "3da69fd4e08beb0c"
+            ]
+        ]
+    },
+    {
+        "id": "e39378439ccbb582",
+        "type": "ui-template",
+        "z": "4f4d1be2771b5eb5",
+        "group": "e9c70293b5e6c137",
+        "page": "",
+        "ui": "",
+        "name": "fleet console",
+        "order": 1,
+        "width": "12",
+        "height": "0",
+        "head": "",
+        "format": "<template>\n  <div v-if=\"msg?.payload\">\n    <div class=\"kpis\">\n      <div class=\"k\"><div class=\"n\">{{ msg.payload.summary.online }}<small>/{{ msg.payload.summary.total }}</small></div><div class=\"l\">Online (cellular)</div></div>\n      <div class=\"k\"><div class=\"n ok\">{{ msg.payload.summary.healthy }}</div><div class=\"l\">Healthy</div></div>\n      <div class=\"k\"><div :class=\"['n', msg.payload.summary.updating ? 'upd' : '']\">{{ msg.payload.summary.updating }}</div><div class=\"l\">Updating now</div></div>\n      <div class=\"k\"><div :class=\"['n', msg.payload.summary.errors ? 'bad' : '']\">{{ msg.payload.summary.errors }}</div><div class=\"l\">Erroring</div></div>\n      <div class=\"k\"><div class=\"n\">{{ msg.payload.avgBytes }}<small> B</small></div><div class=\"l\">Avg payload · ≈ {{ msg.payload.gbPerMonthAt3000.toFixed(0) }} GB/mo at 3,000 units</div></div>\n    </div>\n\n    <div class=\"rollout\">\n      <div class=\"actions\">\n        <b>Flow rollout</b>\n        <span class=\"vers\"><span v-for=\"(n, v) in msg.payload.summary.versions\" :key=\"v\" :class=\"['ver', v === 'v2.4.0' ? 'new' : '']\">{{ v }} × {{ n }}</span></span>\n        <span class=\"spacer\"></span>\n        <button @click=\"send({ payload: { action: 'canary' } })\">1 · Deploy v2.4.0 to Canary (3)</button>\n        <button class=\"primary\" @click=\"send({ payload: { action: 'all' } })\">2 · Deploy v2.4.0 to all</button>\n        <button class=\"ghost\" @click=\"send({ payload: { action: 'rollback_all' } })\">Roll back all</button>\n      </div>\n      <div v-if=\"msg.payload.rollout\" class=\"prog\">\n        <div class=\"pl\">{{ msg.payload.rollout.label }} <span class=\"muted\">· {{ msg.payload.rollout.by }}</span></div>\n        <div class=\"track\"><div class=\"fill\" :style=\"{ width: (msg.payload.rollout.pct * 100) + '%' }\"></div></div>\n        <div class=\"muted\">{{ msg.payload.rollout.landed }} of {{ msg.payload.rollout.total }} landed<span v-if=\"msg.payload.rollout.waitingOffline.length\"> · waiting on {{ msg.payload.rollout.waitingOffline.join(', ') }} (offline — will update on reconnect)</span></div>\n      </div>\n    </div>\n\n    <div class=\"grid\">\n      <div v-for=\"u in msg.payload.units\" :key=\"u.unit\" :class=\"['unit', u.health]\">\n        <div class=\"top\"><b>{{ u.unit }}</b><span :class=\"['v', u.version === 'v2.4.0' ? 'new' : '']\">{{ u.version }}</span></div>\n        <div class=\"muted\">{{ u.region }}</div>\n        <div class=\"row\"><span>{{ u.health === 'offline' ? ('no signal ' + u.ago + 's') : (u.psi == null ? 'psi —' : u.psi + ' psi') }}</span><span>{{ u.rssi }} dBm</span></div>\n        <div class=\"row\"><span>{{ u.bytes }} B/msg</span><span>🔋 {{ u.battery }}%</span></div>\n        <div v-if=\"u.health === 'error'\" class=\"err\">\n          <div>{{ u.errors }} err/min · board {{ u.board }}</div>\n          <button @click=\"send({ payload: { action: 'rollback', unit: u.unit } })\">Roll back to v2.3.0</button>\n        </div>\n      </div>\n    </div>\n\n    <div class=\"log\">\n      <div v-for=\"(e, i) in msg.payload.log\" :key=\"i\" :class=\"['e', e.kind]\"><span class=\"t\">{{ new Date(e.ts).toISOString().slice(11, 19) }}</span> {{ e.text }}</div>\n    </div>\n  </div>\n</template>\n<style scoped>\n.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }\n.k { border: 1px solid #E4E4EC; border-radius: 10px; padding: 12px 14px; background: #fff; }\n.n { font-size: 30px; font-weight: 800; } .n small { font-size: 15px; color: #9090A4; font-weight: 600; }\n.l { font-size: 12px; color: #6B6B80; }\n.ok { color: #059669; } .bad { color: #DC2626; } .upd { color: #4338CA; }\n.rollout { border: 1px solid #E4E4EC; border-radius: 10px; padding: 12px 14px; background: #fff; margin: 12px 0; }\n.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }\n.spacer { flex: 1; }\n.ver { font-size: 12px; background: #EEEEF4; border-radius: 999px; padding: 2px 8px; margin-right: 4px; }\n.ver.new, .v.new { background: #E0E7FF; color: #3730A3; }\nbutton { border: 1px solid #C7C7D6; background: #F8F8FB; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 13px; font-weight: 600; }\nbutton.primary { background: #4338CA; border-color: #4338CA; color: #fff; }\nbutton.ghost { background: none; color: #6B6B80; font-weight: 500; }\n.prog { margin-top: 10px; } .pl { font-size: 13px; margin-bottom: 4px; }\n.track { height: 10px; background: #EEEEF4; border-radius: 5px; overflow: hidden; }\n.fill { height: 100%; background: #4338CA; transition: width .8s; }\n.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px; }\n.unit { border: 1px solid #E4E4EC; border-left: 5px solid #10B981; border-radius: 8px; padding: 8px 10px; background: #fff; font-size: 12px; }\n.unit.offline { border-left-color: #9CA3AF; background: #F7F7F9; color: #9090A4; }\n.unit.updating { border-left-color: #4338CA; background: #F5F5FF; }\n.unit.error { border-left-color: #DC2626; background: #FEF2F2; }\n.top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }\n.v { font-size: 11px; background: #EEEEF4; border-radius: 999px; padding: 1px 7px; }\n.row { display: flex; justify-content: space-between; margin-top: 3px; }\n.muted { color: #9090A4; font-size: 11px; }\n.err { margin-top: 6px; color: #991B1B; }\n.err button { margin-top: 4px; width: 100%; background: #DC2626; border-color: #DC2626; color: #fff; padding: 5px; font-size: 12px; }\n.log { margin-top: 12px; border: 1px solid #E4E4EC; border-radius: 10px; padding: 10px 14px; background: #fff; font-size: 12px; max-height: 220px; overflow: auto; }\n.e { padding: 3px 0; border-bottom: 1px solid #F3F3F7; } .t { color: #9090A4; font-variant-numeric: tabular-nums; margin-right: 6px; }\n.e.alert { color: #991B1B; } .e.deploy { color: #3730A3; font-weight: 600; }\n</style>\n",
+        "storeOutMessages": true,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 660,
+        "y": 120,
+        "wires": [
+            [
+                "58b195022346d158"
+            ]
+        ]
+    },
+    {
+        "id": "58b195022346d158",
+        "type": "link out",
+        "z": "4f4d1be2771b5eb5",
+        "name": "-> rollout manager",
+        "mode": "link",
+        "links": [
+            "be784413202816cd"
+        ],
+        "x": 900,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "22fce0a5f28b2f56",
+        "type": "link in",
+        "z": "4f4d1be2771b5eb5",
+        "name": "health alerts",
+        "links": [
+            "bd26a4dc904e40b5"
+        ],
+        "x": 180,
+        "y": 240,
+        "wires": [
+            [
+                "a7463b520feca830"
+            ]
+        ]
+    },
+    {
+        "id": "a7463b520feca830",
+        "type": "ui-notification",
+        "z": "4f4d1be2771b5eb5",
+        "ui": "d626e0cf7e422c3d",
+        "position": "top right",
+        "colorDefault": false,
+        "color": "#EF4444",
+        "displayTime": "6",
+        "showCountdown": true,
+        "outputs": 1,
+        "allowDismiss": true,
+        "dismissText": "Close",
+        "allowConfirm": false,
+        "confirmText": "Confirm",
+        "raw": false,
+        "className": "",
+        "name": "toast",
+        "x": 420,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3da69fd4e08beb0c",
+        "type": "function",
+        "z": "4f4d1be2771b5eb5",
+        "name": "every 10 s",
+        "func": "const last = context.get('last') || 0;\nif (Date.now() - last < 10000) return null;\ncontext.set('last', Date.now());\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 240,
+        "wires": [
+            [
+                "a7256fad975e6a37"
+            ]
+        ]
+    },
+    {
+        "id": "a7256fad975e6a37",
+        "type": "link out",
+        "z": "4f4d1be2771b5eb5",
+        "name": "-> Hub summary",
+        "mode": "link",
+        "links": [
+            "18cac9d72257fc1e"
+        ],
+        "x": 900,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "18cac9d72257fc1e",
+        "type": "link in",
+        "z": "3efb110d1b265988",
+        "name": "fleet summary",
+        "links": [
+            "a7256fad975e6a37"
+        ],
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "db809fc5add19a40"
+            ]
+        ]
+    },
+    {
+        "id": "db809fc5add19a40",
+        "type": "project link out",
+        "z": "3efb110d1b265988",
+        "name": "to Hub: fleet/summary",
+        "mode": "link",
+        "broadcast": false,
+        "project": "2d85ea9c-6a76-4016-9060-bb44c950640a",
+        "topic": "fleet/summary",
+        "x": 420,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "432bf34ba6fdb15e",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.32.0",
+            "@flowfuse/nr-project-nodes": "0.7.9"
+        }
+    }
+]
