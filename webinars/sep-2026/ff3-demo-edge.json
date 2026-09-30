@@ -1,0 +1,523 @@
+[
+    {
+        "id": "4622c857b1629484",
+        "type": "tab",
+        "label": "1 · Connect: PLC ingest",
+        "disabled": false,
+        "info": "Raw holding registers in, one normalised tag model out. Two register profiles cover three sites; Plant 7's 2009 retrofit reports Fahrenheit, a word-swapped counter and its own state codes."
+    },
+    {
+        "id": "338bb3ff23e00b07",
+        "type": "tab",
+        "label": "2 · Line Monitoring Standard (OEE)",
+        "disabled": false,
+        "info": "One definition of OEE, the same at every site. Change it here once and every plant reports the new number on the next scan -- no site-by-site edits."
+    },
+    {
+        "id": "7d2bd6e10d71730f",
+        "type": "tab",
+        "label": "3 · Local HMI & operator control",
+        "disabled": false,
+        "info": "Dashboard at /dashboard. Runs at the site, keeps working if the WAN drops, and writes back to the PLC (Clear fault)."
+    },
+    {
+        "id": "a27e28fe01372e7d",
+        "type": "tab",
+        "label": "4 · Publish to Hub",
+        "disabled": false,
+        "info": "Every 10 s the site sends a compact KPI record to the enterprise Hub. The plant floor keeps its detail; the enterprise gets one trusted number per line."
+    },
+    {
+        "id": "b2c1dcf8e3b9db5c",
+        "type": "ui-theme",
+        "name": "FlowFuse",
+        "colors": {
+            "surface": "#ffffff",
+            "primary": "#4338CA",
+            "bgPage": "#F4F4F8",
+            "groupBg": "#ffffff",
+            "groupOutline": "#E4E4EC"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "14px",
+            "groupGap": "14px",
+            "groupBorderRadius": "10px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "2f1f27b59ad6e54c",
+        "type": "ui-base",
+        "name": "Northwind · Plant Floor",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "none",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": "4",
+        "showDisconnectNotification": true
+    },
+    {
+        "id": "45f39d0f3983c3a5",
+        "type": "ui-page",
+        "name": "Line Monitoring",
+        "ui": "2f1f27b59ad6e54c",
+        "path": "/",
+        "icon": "factory",
+        "layout": "grid",
+        "theme": "b2c1dcf8e3b9db5c",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "b1c976958ff25e6b",
+        "type": "ui-group",
+        "name": "Lines",
+        "page": "45f39d0f3983c3a5",
+        "width": "12",
+        "height": "1",
+        "order": 1,
+        "showTitle": false,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "8483e58c4796de3f",
+        "type": "ui-group",
+        "name": "Alarms",
+        "page": "45f39d0f3983c3a5",
+        "width": "12",
+        "height": "1",
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "f1e23e1d770ae2fc",
+        "type": "comment",
+        "z": "4622c857b1629484",
+        "name": "Raw registers from the PLCs (via the sim)",
+        "info": "",
+        "x": 180,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "9c4896474dfa98bf",
+        "type": "project link in",
+        "z": "4622c857b1629484",
+        "name": "from PLCs: plc/raw",
+        "project": "",
+        "broadcast": false,
+        "topic": "plc/raw",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "79c323ee11f88a9e"
+            ]
+        ]
+    },
+    {
+        "id": "79c323ee11f88a9e",
+        "type": "function",
+        "z": "4622c857b1629484",
+        "name": "decode: site register profiles",
+        "func": "// Site register profiles: the only place that knows what a PLC looks like.\nconst PROFILES = {\n    STD: {\n        state: { 0: 'STOPPED', 1: 'RUNNING', 2: 'IDLE', 3: 'FAULTED' },\n        tempC: r => r[1] / 10,\n        good: r => ((r[3] << 16) | r[4]) >>> 0,\n    },\n    LEGACY_F: {                                   // Plant 7, S7-300 retrofit\n        state: { 0: 'STOPPED', 10: 'RUNNING', 20: 'IDLE', 30: 'FAULTED' },\n        tempC: r => ((r[1] / 10) - 32) * 5 / 9,\n        good: r => ((r[4] << 16) | r[3]) >>> 0,   // low word first\n    },\n};\nconst SITES = {\n    P03: { name: 'Plant 3', city: 'Columbus, OH', nameplateBpm: 600 },\n    P07: { name: 'Plant 7', city: 'Fresno, CA', nameplateBpm: 450 },\n    P12: { name: 'Plant 12', city: 'Monterrey, MX', nameplateBpm: 720 },\n};\nconst FAULTS = { 0: '', 2104: 'Capper jam (star wheel)', 3310: 'Starved: low bottle supply' };\n\nconst p = msg.payload;\nconst prof = PROFILES[p.map];\nif (!prof || !SITES[p.site]) { node.warn('unknown site/profile ' + p.site + '/' + p.map); return null; }\nconst r = p.regs;\nconst tag = {\n    site: p.site, ...SITES[p.site], line: p.line, plc: p.plcModel, profile: p.map,\n    state: prof.state[r[0]] || 'UNKNOWN',\n    tempC: Math.round(prof.tempC(r) * 10) / 10,\n    speedBpm: r[2], goodTotal: prof.good(r), rejectTotal: r[5],\n    faultCode: r[6], faultText: FAULTS[r[6]] || ('Fault ' + r[6]), ts: p.ts,\n};\n\n// Keep a rolling 5-minute window of samples per line for the OEE standard.\nconst acc = global.get('edge_acc') || {};\nconst a = acc[p.site] || { samples: [], prevGood: tag.goodTotal, prevRej: tag.rejectTotal, prevTs: p.ts, state: tag.state, since: p.ts };\nconst dt = Math.max(0, Math.min(p.ts - a.prevTs, 10000));\na.samples.push({\n    dt, planned: tag.state !== 'STOPPED', running: tag.state === 'RUNNING',\n    good: Math.max(0, tag.goodTotal - a.prevGood),\n    rej: (tag.rejectTotal - a.prevRej + 65536) % 65536,\n});\nconst cutoff = 5 * 60 * 1000;\nlet span = a.samples.reduce((s, x) => s + x.dt, 0);\nwhile (span > cutoff && a.samples.length > 1) span -= a.samples.shift().dt;\na.prevGood = tag.goodTotal; a.prevRej = tag.rejectTotal; a.prevTs = p.ts;\n\nlet event = null;\nif (tag.state !== a.state) {\n    event = { payload: { ts: p.ts, site: tag.site, name: tag.name, from: a.state, to: tag.state, text: tag.state === 'RUNNING' ? 'Line running' : tag.faultText } };\n    a.state = tag.state; a.since = p.ts;\n}\ntag.stateSince = a.since;\nacc[p.site] = a;\nglobal.set('edge_acc', acc);\n\nconst lines = global.get('edge_lines') || {};\nlines[p.site] = tag;\nglobal.set('edge_lines', lines);\nnode.status({ fill: tag.state === 'RUNNING' ? 'green' : tag.state === 'FAULTED' ? 'red' : 'yellow', shape: 'dot', text: `${tag.site} ${tag.state} ${tag.speedBpm} bpm` });\nreturn [{ topic: `northwind/${tag.site.toLowerCase()}/${tag.line.toLowerCase()}`, payload: tag }, event];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [],
+            [
+                "5242728036cdc19b"
+            ]
+        ]
+    },
+    {
+        "id": "5242728036cdc19b",
+        "type": "link out",
+        "z": "4622c857b1629484",
+        "name": "state changes -> HMI",
+        "mode": "link",
+        "links": [
+            "f6bf458cdabc8f4a"
+        ],
+        "x": 660,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "2f6bbdf5fe731009",
+        "type": "comment",
+        "z": "338bb3ff23e00b07",
+        "name": "Central Engineering owns this logic (see tab info)",
+        "info": "",
+        "x": 180,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "2e4d96c146cfa5a8",
+        "type": "inject",
+        "z": "338bb3ff23e00b07",
+        "name": "every 2 s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "2",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "3",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "6653ccfae72c2e1b"
+            ]
+        ]
+    },
+    {
+        "id": "6653ccfae72c2e1b",
+        "type": "function",
+        "z": "338bb3ff23e00b07",
+        "name": "OEE: Line Monitoring Standard",
+        "func": "// ------------------------------------------------------------------\n//  Northwind Line Monitoring Standard  --  OEE = A x P x Q\n//  Owned by Central Engineering. Every site runs this exact function.\n// ------------------------------------------------------------------\nconst STANDARD = 'v1.4';\nconst IDEAL_BPM = 600;   // TODO(#4471): every line is scored against 600 bpm\n\nconst lines = global.get('edge_lines') || {};\nconst acc = global.get('edge_acc') || {};\nconst sum = (xs, f) => xs.reduce((s, x) => s + f(x), 0);\n\nconst result = Object.keys(lines).sort().map(site => {\n    const line = lines[site];\n    const s = (acc[site] && acc[site].samples) || [];\n    const plannedMs = sum(s, x => x.planned ? x.dt : 0);\n    const runMs = sum(s, x => x.running ? x.dt : 0);\n    const good = sum(s, x => x.good);\n    const rej = sum(s, x => x.rej);\n\n    const idealBpm = line.nameplateBpm;\n    const availability = plannedMs ? runMs / plannedMs : 0;\n    const performance = runMs ? (good + rej) / (idealBpm * runMs / 60000) : 0;\n    const quality = (good + rej) ? good / (good + rej) : 1;\n\n    return { ...line, standard: STANDARD, idealBpm,\n             availability, performance, quality,\n             oee: availability * performance * quality,\n             goodWindow: good, rejectWindow: rej };\n});\nglobal.set('edge_oee', result);\nreturn { payload: result };\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "33a8b9c77eac5cfe"
+            ]
+        ]
+    },
+    {
+        "id": "33a8b9c77eac5cfe",
+        "type": "link out",
+        "z": "338bb3ff23e00b07",
+        "name": "-> HMI + Hub",
+        "mode": "link",
+        "links": [
+            "cea49b475e518a60",
+            "6bf8d6056421886f"
+        ],
+        "x": 660,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "cea49b475e518a60",
+        "type": "link in",
+        "z": "7d2bd6e10d71730f",
+        "name": "OEE results",
+        "links": [
+            "33a8b9c77eac5cfe"
+        ],
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "f7cc40a10f6677fb"
+            ]
+        ]
+    },
+    {
+        "id": "f7cc40a10f6677fb",
+        "type": "ui-template",
+        "z": "7d2bd6e10d71730f",
+        "group": "b1c976958ff25e6b",
+        "page": "",
+        "ui": "",
+        "name": "line tiles",
+        "order": 1,
+        "width": "12",
+        "height": "0",
+        "head": "",
+        "format": "<template>\n  <div>\n    <div class=\"head\">\n      <div><b>Line Monitoring Standard</b> <span class=\"std\">{{ msg?.payload?.[0]?.standard || '...' }}</span></div>\n      <div class=\"muted\">One definition of OEE · {{ (msg?.payload || []).length }} sites · rolling 5 min</div>\n    </div>\n    <div class=\"grid\">\n      <div v-for=\"l in (msg?.payload || [])\" :key=\"l.site\" :class=\"['tile', l.state]\">\n        <div class=\"top\">\n          <div><div class=\"site\">{{ l.name }}</div><div class=\"muted\">{{ l.city }} · {{ l.line }}</div></div>\n          <div :class=\"['pill', l.state]\">{{ l.state }}</div>\n        </div>\n        <div class=\"oee\">\n          <div :class=\"['big', l.oee > 1 ? 'impossible' : '']\">{{ pct(l.oee) }}</div>\n          <div class=\"muted\">OEE</div>\n        </div>\n        <div class=\"bars\">\n          <div v-for=\"k in ['availability','performance','quality']\" :key=\"k\" class=\"bar\">\n            <span class=\"lbl\">{{ k[0].toUpperCase() }}</span>\n            <div class=\"track\"><div class=\"fill\" :style=\"{ width: Math.min(100, l[k] * 100) + '%', background: l[k] > 1 ? '#DC2626' : '#4338CA' }\"></div></div>\n            <span :class=\"['val', l[k] > 1 ? 'impossible' : '']\">{{ pct(l[k]) }}</span>\n          </div>\n        </div>\n        <div class=\"facts\">\n          <span>{{ l.speedBpm }} / {{ l.nameplateBpm }} bpm</span>\n          <span>{{ l.tempC }} °C</span>\n          <span>{{ l.goodWindow }} good · {{ l.rejectWindow }} rej</span>\n        </div>\n        <div class=\"plc\">{{ l.plc }} · profile {{ l.profile }}</div>\n        <div v-if=\"l.state === 'FAULTED' || l.state === 'IDLE'\" class=\"fault\">\n          <span>{{ l.faultText }}</span>\n          <button v-if=\"l.state === 'FAULTED'\" @click=\"send({ payload: { site: l.site, cmd: 'clear_fault' } })\">Clear fault</button>\n        </div>\n      </div>\n    </div>\n  </div>\n</template>\n<script>\nexport default {\n  methods: { pct(v) { return (typeof v === 'number') ? (v * 100).toFixed(1) + '%' : '-' } }\n}\n</script>\n<style scoped>\n.head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }\n.std { background: #4338CA; color: #fff; border-radius: 999px; padding: 2px 10px; font-size: 12px; margin-left: 6px; }\n.muted { color: #6B6B80; font-size: 12px; }\n.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }\n.tile { border: 1px solid #E4E4EC; border-top: 6px solid #10B981; border-radius: 10px; padding: 14px; background: #fff; }\n.tile.IDLE { border-top-color: #F59E0B; } .tile.FAULTED { border-top-color: #DC2626; } .tile.STOPPED { border-top-color: #9CA3AF; }\n.top { display: flex; justify-content: space-between; align-items: flex-start; }\n.site { font-weight: 700; font-size: 18px; }\n.pill { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: #D1FAE5; color: #065F46; }\n.pill.IDLE { background: #FEF3C7; color: #92400E; } .pill.FAULTED { background: #FEE2E2; color: #991B1B; }\n.oee { margin: 10px 0 6px; } .big { font-size: 40px; font-weight: 800; line-height: 1; }\n.impossible { color: #DC2626; }\n.bars { display: flex; flex-direction: column; gap: 5px; margin: 8px 0; }\n.bar { display: grid; grid-template-columns: 16px 1fr 58px; align-items: center; gap: 8px; font-size: 12px; }\n.lbl { font-weight: 700; color: #6B6B80; }\n.track { height: 8px; background: #EEEEF4; border-radius: 4px; overflow: hidden; }\n.fill { height: 100%; transition: width .6s; }\n.val { text-align: right; font-variant-numeric: tabular-nums; }\n.facts { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: #33334A; margin-top: 6px; }\n.plc { font-size: 11px; color: #9090A4; margin-top: 6px; }\n.fault { margin-top: 10px; background: #FEF2F2; border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; }\n.tile.IDLE .fault { background: #FFFBEB; }\n.fault button { background: #DC2626; color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-weight: 600; }\n</style>\n",
+        "storeOutMessages": true,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "f02ff898acac4810"
+            ]
+        ]
+    },
+    {
+        "id": "f02ff898acac4810",
+        "type": "function",
+        "z": "7d2bd6e10d71730f",
+        "name": "operator action (logged)",
+        "func": "// Operator write-back. Log who asked for what before it reaches the PLC.\nconst u = msg._client && (msg._client.user && (msg._client.user.name || msg._client.user.username));\nnode.status({ fill: 'blue', shape: 'dot', text: `${msg.payload.cmd} ${msg.payload.site} by ${u || 'operator'}` });\nconst line = (global.get('edge_lines') || {})[msg.payload.site] || {};\nconst log = global.get('edge_alarms') || [];\nlog.unshift({ Time: new Date().toISOString().slice(11, 19), Site: line.name || msg.payload.site, Event: 'Operator: ' + msg.payload.cmd.replace('_', ' '), By: u || 'operator' });\nglobal.set('edge_alarms', log.slice(0, 15));\nreturn [{ payload: msg.payload }, { payload: log.slice(0, 15) }];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 120,
+        "wires": [
+            [
+                "b42e753bf04f38a6"
+            ],
+            [
+                "91af7b337fe5585c"
+            ]
+        ]
+    },
+    {
+        "id": "b42e753bf04f38a6",
+        "type": "project link out",
+        "z": "7d2bd6e10d71730f",
+        "name": "to PLCs: plc/cmd",
+        "mode": "link",
+        "broadcast": false,
+        "project": "3de865b2-f619-4be4-b3b9-966b06f27ca8",
+        "topic": "plc/cmd",
+        "x": 900,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "f6bf458cdabc8f4a",
+        "type": "link in",
+        "z": "7d2bd6e10d71730f",
+        "name": "state changes",
+        "links": [
+            "5242728036cdc19b"
+        ],
+        "x": 180,
+        "y": 240,
+        "wires": [
+            [
+                "7bac49c4814b4e23"
+            ]
+        ]
+    },
+    {
+        "id": "7bac49c4814b4e23",
+        "type": "function",
+        "z": "7d2bd6e10d71730f",
+        "name": "alarm & event log",
+        "func": "const e = msg.payload;\nconst log = global.get('edge_alarms') || [];\nlog.unshift({ Time: new Date(e.ts).toISOString().slice(11, 19), Site: e.name, Event: `${e.from} -> ${e.to}: ${e.text}`, By: 'PLC' });\nglobal.set('edge_alarms', log.slice(0, 15));\nconst toast = e.to === 'FAULTED' ? { payload: `${e.name}: ${e.text}` } : null;\nreturn [{ payload: log.slice(0, 15) }, toast];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 240,
+        "wires": [
+            [
+                "91af7b337fe5585c"
+            ],
+            [
+                "808c88b076a427da"
+            ]
+        ]
+    },
+    {
+        "id": "91af7b337fe5585c",
+        "type": "ui-table",
+        "z": "7d2bd6e10d71730f",
+        "group": "8483e58c4796de3f",
+        "name": "Alarm & event log",
+        "label": "Alarm & event log",
+        "order": 2,
+        "width": "12",
+        "height": "0",
+        "maxrows": 0,
+        "passthru": false,
+        "autocols": false,
+        "showSearch": false,
+        "deselect": true,
+        "selectionType": "none",
+        "columns": [
+            {
+                "title": "Time (UTC)",
+                "key": "Time",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Site",
+                "key": "Site",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Event",
+                "key": "Event",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Source",
+                "key": "By",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            }
+        ],
+        "mobileBreakpoint": "sm",
+        "mobileBreakpointType": "defaults",
+        "action": "replace",
+        "x": 660,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "808c88b076a427da",
+        "type": "ui-notification",
+        "z": "7d2bd6e10d71730f",
+        "ui": "2f1f27b59ad6e54c",
+        "position": "top right",
+        "colorDefault": false,
+        "color": "#EF4444",
+        "displayTime": "6",
+        "showCountdown": true,
+        "outputs": 1,
+        "allowDismiss": true,
+        "dismissText": "Close",
+        "allowConfirm": false,
+        "confirmText": "Confirm",
+        "raw": false,
+        "className": "",
+        "name": "toast",
+        "x": 660,
+        "y": 300,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "6bf8d6056421886f",
+        "type": "link in",
+        "z": "a27e28fe01372e7d",
+        "name": "OEE results",
+        "links": [
+            "33a8b9c77eac5cfe"
+        ],
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "08123613d6e10c0a"
+            ]
+        ]
+    },
+    {
+        "id": "08123613d6e10c0a",
+        "type": "function",
+        "z": "a27e28fe01372e7d",
+        "name": "KPI record (every 10 s)",
+        "func": "// Throttle to one KPI record per site every 10 s.\nconst last = context.get('last') || 0;\nif (Date.now() - last < 10000) return null;\ncontext.set('last', Date.now());\nconst r4 = v => Math.round(v * 10000) / 10000;\nreturn { payload: msg.payload.map(l => ({\n    site: l.site, site_name: l.name, state: l.state, standard: l.standard,\n    oee: r4(l.oee), availability: r4(l.availability), performance: r4(l.performance), quality: r4(l.quality),\n})) };\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "675e1289c11f479a"
+            ]
+        ]
+    },
+    {
+        "id": "675e1289c11f479a",
+        "type": "project link out",
+        "z": "a27e28fe01372e7d",
+        "name": "to Hub: kpi/oee",
+        "mode": "link",
+        "broadcast": false,
+        "project": "2d85ea9c-6a76-4016-9060-bb44c950640a",
+        "topic": "kpi/oee",
+        "x": 660,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "e8d3331743fc8208",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.32.0",
+            "@flowfuse/nr-project-nodes": "0.7.9"
+        }
+    }
+]
