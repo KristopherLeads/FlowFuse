@@ -1,0 +1,632 @@
+[
+    {
+        "id": "e32170b264459737",
+        "type": "tab",
+        "label": "Plant floor PLCs",
+        "disabled": false,
+        "info": "Three filler lines, three sites. Plant 7 is a 2009 retrofit whose PLC uses a different register map (Fahrenheit, word-swapped counter, different state codes) -- the snowflake the Edge segment normalises away."
+    },
+    {
+        "id": "06825059e08d1fd7",
+        "type": "tab",
+        "label": "SAP ERP + 3PL API",
+        "disabled": false,
+        "info": "SAP ECC sends ORDERS05 IDocs to the Hub. The Hub calls the 3PL fulfilment API below (POST /api/3pl/shipments), which the control panel can take down to show retry and backlog behaviour."
+    },
+    {
+        "id": "a899d0f418c38120",
+        "type": "tab",
+        "label": "Field units (cellular)",
+        "disabled": false,
+        "info": "24 remote monitoring units on cellular links across three basins. They report every 5 s, drop off the network now and then, and apply flow updates with a realistic landing delay. FU-017 is an older rev A board: v2.4.0 breaks its sensor decode, which is the unit the Fleet presenter rolls back."
+    },
+    {
+        "id": "f9389eb0cdeffb1b",
+        "type": "tab",
+        "label": "Presenter control panel",
+        "disabled": false,
+        "info": "Dashboard at /dashboard. Every fault the webinar needs is one click here."
+    },
+    {
+        "id": "bbf70cf4f58af33c",
+        "type": "ui-theme",
+        "name": "FlowFuse",
+        "colors": {
+            "surface": "#ffffff",
+            "primary": "#4338CA",
+            "bgPage": "#F4F4F8",
+            "groupBg": "#ffffff",
+            "groupOutline": "#E4E4EC"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "14px",
+            "groupGap": "14px",
+            "groupBorderRadius": "10px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "1b926f334ea3bd34",
+        "type": "ui-base",
+        "name": "FF3 Demo · Sim",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "none",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": "4",
+        "showDisconnectNotification": true
+    },
+    {
+        "id": "a56d2e9743f8920a",
+        "type": "ui-page",
+        "name": "Presenter control panel",
+        "ui": "1b926f334ea3bd34",
+        "path": "/",
+        "icon": "tune",
+        "layout": "grid",
+        "theme": "bbf70cf4f58af33c",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "ce79bb6579612d88",
+        "type": "ui-group",
+        "name": "Controls",
+        "page": "a56d2e9743f8920a",
+        "width": "12",
+        "height": "1",
+        "order": 1,
+        "showTitle": false,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "fb5a46766817abc5",
+        "type": "ui-group",
+        "name": "Live state",
+        "page": "a56d2e9743f8920a",
+        "width": "12",
+        "height": "1",
+        "order": 2,
+        "showTitle": false,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "2cf006ced187a4c9",
+        "type": "comment",
+        "z": "e32170b264459737",
+        "name": "PLCs -> Edge (project link: plc/raw)",
+        "info": "",
+        "x": 180,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "c63e4407fbd24668",
+        "type": "inject",
+        "z": "e32170b264459737",
+        "name": "scan every 2 s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "2",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "4539e68e354ded8b"
+            ]
+        ]
+    },
+    {
+        "id": "4539e68e354ded8b",
+        "type": "function",
+        "z": "e32170b264459737",
+        "name": "PLC register scan (3 sites)",
+        "func": "// Scan every PLC and emit its raw holding registers, the way a Modbus\n// poll would see them. Nothing here is in engineering units.\nconst plants = global.get('sim_plants');\nconst now = Date.now();\nconst out = [];\nfor (const p of Object.values(plants)) {\n    if (p.forced === 'jam') { p.state = 3; p.fault = 2104; p.forced = null; }\n    if (p.forced === 'starve') { p.state = 2; p.fault = 3310; p.idleUntil = now + 45000; p.forced = null; }\n\n    // Micro-stops: the line starves for a few seconds and recovers by itself.\n    if (p.state === 1 && Math.random() < 0.012) { p.state = 2; p.fault = 3310; p.idleUntil = now + 8000 + Math.random() * 12000; }\n    if (p.state === 2 && p.idleUntil && now > p.idleUntil) { p.state = 1; p.fault = 0; p.idleUntil = 0; }\n\n    if (p.state === 1) {\n        p.speed += (p.target - p.speed) * 0.3 + (Math.random() - 0.5) * p.target * 0.02;\n        const made = p.speed / 30;                       // bottles in a 2 s scan\n        const rej = Math.random() < (made * p.rejRate % 1) ? Math.ceil(made * p.rejRate) : Math.floor(made * p.rejRate);\n        p.good += Math.round(made) - rej;\n        p.reject += rej;\n        p.tempC += (4.2 - p.tempC) * 0.2 + (Math.random() - 0.5) * 0.15;\n    } else {\n        p.speed = Math.max(0, p.speed * 0.3);\n        p.tempC += p.state === 3 ? 0.05 : 0.01;          // product warms while the line is down\n    }\n\n    const good = p.good >>> 0, hi = good >>> 16, lo = good & 0xFFFF;\n    let regs;\n    if (p.map === 'LEGACY_F') {\n        const legacyState = { 0: 0, 1: 10, 2: 20, 3: 30 }[p.state];\n        regs = [legacyState, Math.round((p.tempC * 9 / 5 + 32) * 10), Math.round(p.speed), lo, hi, p.reject & 0xFFFF, p.fault];\n    } else {\n        regs = [p.state, Math.round(p.tempC * 10), Math.round(p.speed), hi, lo, p.reject & 0xFFFF, p.fault];\n    }\n    out.push({ topic: 'plc/' + p.site, payload: { site: p.site, line: p.line, plcModel: p.plc, map: p.map, regs, ts: now } });\n}\nreturn [out];\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "\nif (!global.get('sim_plants')) {\n    global.set('sim_plants', {\n        P03: { site: 'P03', line: 'FILLER-1', plc: 'CompactLogix 5380', map: 'STD',\n               state: 1, speed: 560, target: 560, tempC: 4.1, good: 184220, reject: 1210,\n               fault: 0, idleUntil: 0, rejRate: 0.006, forced: null },\n        P07: { site: 'P07', line: 'FILLER-2', plc: 'S7-300 (2009 retrofit)', map: 'LEGACY_F',\n               state: 1, speed: 400, target: 400, tempC: 4.6, good: 97310, reject: 1480,\n               fault: 0, idleUntil: 0, rejRate: 0.011, forced: null },\n        P12: { site: 'P12', line: 'FILLER-1', plc: 'CompactLogix 5380', map: 'STD',\n               state: 1, speed: 690, target: 690, tempC: 3.8, good: 251900, reject: 1650,\n               fault: 0, idleUntil: 0, rejRate: 0.008, forced: null },\n    });\n}\n",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "0e8b7be77cc3c1ac"
+            ]
+        ]
+    },
+    {
+        "id": "0e8b7be77cc3c1ac",
+        "type": "project link out",
+        "z": "e32170b264459737",
+        "name": "to Edge: plc/raw",
+        "mode": "link",
+        "broadcast": false,
+        "project": "e437be4b-473f-4993-a1ee-b90e67ccbc53",
+        "topic": "plc/raw",
+        "x": 660,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "c211407bb91b8f1d",
+        "type": "project link in",
+        "z": "e32170b264459737",
+        "name": "from Edge: plc/cmd",
+        "project": "",
+        "broadcast": false,
+        "topic": "plc/cmd",
+        "x": 180,
+        "y": 240,
+        "wires": [
+            [
+                "1bd4749f1cf0b5e3"
+            ]
+        ]
+    },
+    {
+        "id": "1bd4749f1cf0b5e3",
+        "type": "function",
+        "z": "e32170b264459737",
+        "name": "apply operator command",
+        "func": "// Operator commands arriving from the Edge HMI.\nconst plants = global.get('sim_plants');\nconst { site, cmd, value } = msg.payload || {};\nconst p = plants && plants[site];\nif (!p) return null;\nif (cmd === 'clear_fault') { p.state = 1; p.fault = 0; p.idleUntil = 0; }\nif (cmd === 'set_speed' && Number.isFinite(value)) p.target = Math.max(0, Math.min(800, value));\nnode.status({ fill: 'blue', shape: 'dot', text: `${site} ${cmd} @ ${new Date().toISOString().slice(11, 19)}` });\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "52bdc0aeab0adcaf",
+        "type": "comment",
+        "z": "06825059e08d1fd7",
+        "name": "SAP -> Hub (project link: erp/idoc)",
+        "info": "",
+        "x": 180,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "165dc807439fb45e",
+        "type": "inject",
+        "z": "06825059e08d1fd7",
+        "name": "new order every 7 s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "7",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "c216d4ef3f658136"
+            ]
+        ]
+    },
+    {
+        "id": "c216d4ef3f658136",
+        "type": "function",
+        "z": "06825059e08d1fd7",
+        "name": "SAP ORDERS05 generator",
+        "func": "// Emit SAP ORDERS05 IDocs (JSON-serialised) the way an SAP PI/PO or\n// Integration Suite adapter would hand them over.\nconst CUSTOMERS = [\n    { id: '0000100231', name: 'Harbor Grocers' },\n    { id: '0000100477', name: 'Mesa Foodservice' },\n    { id: '0000100912', name: 'Northline Distribution' },\n    { id: '0000101206', name: 'Coastal Mart' },\n    { id: '0000101388', name: 'Summit Wholesale' },\n];\nconst MATERIALS = [\n    { id: 'FG-1001', desc: 'Sparkling Water 12oz 24pk' },\n    { id: 'FG-1002', desc: 'Cold Brew 11oz 12pk' },\n    { id: 'FG-2040', desc: 'Electrolyte Drink 20oz 24pk' },\n    { id: 'FG-3310', desc: 'Oat Milk 32oz 6pk' },\n];\nconst pick = a => a[Math.floor(Math.random() * a.length)];\nconst ymd = d => d.toISOString().slice(0, 10).replace(/-/g, '');\n\nfunction idoc(bad) {\n    const seq = (global.get('sim_idoc_seq') || 4500120000) + 1;\n    global.set('sim_idoc_seq', seq);\n    const c = pick(CUSTOMERS);\n    const n = 1 + Math.floor(Math.random() * 3);\n    const mats = [...MATERIALS].sort(() => Math.random() - 0.5).slice(0, n);\n    const req = new Date(Date.now() + (2 + Math.floor(Math.random() * 5)) * 86400000);\n    const doc = { IDOC: {\n        EDI_DC40: { DOCNUM: String(seq).padStart(16, '0'), IDOCTYP: 'ORDERS05', MESTYP: 'ORDERS', SNDPRN: 'SAPECC_PRD', CREDAT: ymd(new Date()) },\n        E1EDK01: { BELNR: 'PO-' + seq, CURCY: 'USD' },\n        E1EDKA1: [{ PARVW: 'AG', PARTN: c.id, NAME1: c.name }],\n        E1EDK03: [{ IDDAT: '002', DATUM: ymd(req) }],\n        E1EDP01: mats.map((m, i) => ({\n            POSEX: String((i + 1) * 10).padStart(6, '0'),\n            MENGE: (20 * (1 + Math.floor(Math.random() * 12))).toFixed(3),\n            MENEE: 'CS',\n            E1EDP19: [{ QUALF: '002', IDTNR: m.id, KTEXT: m.desc }],\n        })),\n    } };\n    if (bad) {                       // what a bad user-exit in SAP looks like downstream\n        doc.IDOC.E1EDP01[0].E1EDP19 = [];\n        doc.IDOC.E1EDP01[0].MENGE = '12,5O';\n    }\n    return { topic: 'erp/idoc', payload: doc };\n}\n\nconst count = msg.topic === 'burst' ? 10 : 1;\nconst out = [];\nfor (let i = 0; i < count; i++) out.push(idoc(msg.topic === 'malformed'));\nglobal.set('sim_idocs_sent', (global.get('sim_idocs_sent') || 0) + count);\nreturn [out];\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "08aa397a21ca50ac"
+            ]
+        ]
+    },
+    {
+        "id": "08aa397a21ca50ac",
+        "type": "project link out",
+        "z": "06825059e08d1fd7",
+        "name": "to Hub: erp/idoc",
+        "mode": "link",
+        "broadcast": false,
+        "project": "2d85ea9c-6a76-4016-9060-bb44c950640a",
+        "topic": "erp/idoc",
+        "x": 660,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "1a8cb62b3966eb8b",
+        "type": "link in",
+        "z": "06825059e08d1fd7",
+        "name": "from control panel",
+        "links": [
+            "b549b09eb81db66e"
+        ],
+        "x": 180,
+        "y": 180,
+        "wires": [
+            [
+                "c216d4ef3f658136"
+            ]
+        ]
+    },
+    {
+        "id": "6f171039133a5f69",
+        "type": "comment",
+        "z": "06825059e08d1fd7",
+        "name": "3PL fulfilment API (called by the Hub)",
+        "info": "",
+        "x": 180,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "fed12a4651be1457",
+        "type": "http in",
+        "z": "06825059e08d1fd7",
+        "name": "",
+        "url": "/api/3pl/shipments",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 180,
+        "y": 300,
+        "wires": [
+            [
+                "bb786319c1757537"
+            ]
+        ]
+    },
+    {
+        "id": "bb786319c1757537",
+        "type": "function",
+        "z": "06825059e08d1fd7",
+        "name": "3PL: create shipment",
+        "func": "// Mock 3PL fulfilment API. The control panel can take it down.\nconst calls = (global.get('sim_3pl_calls') || 0) + 1;\nglobal.set('sim_3pl_calls', calls);\nif (global.get('sim_3pl_down')) {\n    msg.statusCode = 503;\n    msg.payload = { error: 'Service Unavailable', detail: 'upstream carrier gateway timeout' };\n    return msg;\n}\nconst body = msg.payload || {};\nif (!body.orderId) {\n    msg.statusCode = 400;\n    msg.payload = { error: 'orderId is required' };\n    return msg;\n}\nconst carriers = ['UPS Freight', 'XPO Logistics', 'Estes Express', 'Old Dominion'];\nmsg.statusCode = 201;\nmsg.payload = {\n    shipmentId: 'SHP-' + Math.random().toString(36).slice(2, 8).toUpperCase(),\n    orderId: body.orderId,\n    carrier: carriers[Math.floor(Math.random() * carriers.length)],\n    eta: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10),\n};\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 300,
+        "wires": [
+            [
+                "eefc1c3c358ecf30"
+            ]
+        ]
+    },
+    {
+        "id": "eefc1c3c358ecf30",
+        "type": "http response",
+        "z": "06825059e08d1fd7",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 660,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "fa424b31415fd374",
+        "type": "comment",
+        "z": "a899d0f418c38120",
+        "name": "Field units -> Fleet (project link: field/telemetry)",
+        "info": "",
+        "x": 180,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "8f885d4f076865c4",
+        "type": "inject",
+        "z": "a899d0f418c38120",
+        "name": "report every 5 s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "5",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "4d924ff61e03bc6a"
+            ]
+        ]
+    },
+    {
+        "id": "4d924ff61e03bc6a",
+        "type": "function",
+        "z": "a899d0f418c38120",
+        "name": "cellular unit telemetry (24)",
+        "func": "// One telemetry batch per 5 s. Offline units simply do not report.\nconst units = global.get('sim_units');\nconst now = Date.now();\nconst batch = [];\nfor (const u of Object.values(units)) {\n    if (!u.forcedOffline && !u.offlineUntil && Math.random() < 0.004) u.offlineUntil = now + 20000 + Math.random() * 25000;\n    if (u.offlineUntil && now > u.offlineUntil) u.offlineUntil = 0;\n    if (u.forcedOffline || u.offlineUntil) continue;\n\n    let status = 'running';\n    if (u.pending) {\n        if (!u.pending.landAt) u.pending.landAt = now + 3000 + Math.random() * 10000;   // lands once it can talk\n        if (now >= u.pending.landAt) { u.version = u.pending.version; u.pending = null; u.bootedAt = now; }\n        else status = 'updating';\n    }\n    u.rssi = Math.max(-115, Math.min(-55, u.rssi + Math.round((Math.random() - 0.5) * 4)));\n    u.battery = Math.max(20, u.battery - (Math.random() < 0.02 ? 1 : 0));\n    u.psi += (500 - u.psi) * 0.1 + (Math.random() - 0.5) * 6;\n\n    const v24 = u.version === 'v2.4.0';\n    const broken = v24 && u.board === 'rev A';\n    batch.push({\n        unit: u.unit, region: u.region, version: u.version, board: u.board, status,\n        rssi: u.rssi, battery: u.battery,\n        pressurePsi: broken ? null : Math.round(u.psi * 10) / 10,\n        bytesPerMsg: Math.round(v24 ? 380 + Math.random() * 30 : 1400 + Math.random() * 60),\n        errorsPerMin: broken ? 30 + Math.round(Math.random() * 12) : 0,\n        lastError: broken ? 'sensor decode: unsupported frame format (board rev A)' : '',\n        uptimeS: Math.round((now - u.bootedAt) / 1000),\n    });\n}\nreturn { topic: 'field/telemetry', payload: batch };\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "\nif (!global.get('sim_units')) {\n    const units = {};\n    for (let i = 1; i <= 24; i++) {\n        const id = 'FU-' + String(i).padStart(3, '0');\n        const region = i <= 10 ? 'Permian Basin, TX' : i <= 18 ? 'Bakken, ND' : 'Marcellus, PA';\n        units[id] = {\n            unit: id, region, version: 'v2.3.0', board: (i === 17) ? 'rev A' : 'rev C',\n            rssi: -68 - Math.round(Math.random() * 30), battery: 82 + Math.round(Math.random() * 17),\n            psi: 480 + Math.random() * 40, offlineUntil: 0, forcedOffline: false,\n            pending: null, bootedAt: Date.now() - Math.round(Math.random() * 9e8),\n        };\n    }\n    global.set('sim_units', units);\n}\n",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "c528c96e70118512"
+            ]
+        ]
+    },
+    {
+        "id": "c528c96e70118512",
+        "type": "project link out",
+        "z": "a899d0f418c38120",
+        "name": "to Fleet: field/telemetry",
+        "mode": "link",
+        "broadcast": false,
+        "project": "8a965de5-0d6a-4147-af82-158602819588",
+        "topic": "field/telemetry",
+        "x": 660,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "bacd2ed4e49c5201",
+        "type": "project link in",
+        "z": "a899d0f418c38120",
+        "name": "from Fleet: field/cmd",
+        "project": "",
+        "broadcast": false,
+        "topic": "field/cmd",
+        "x": 180,
+        "y": 240,
+        "wires": [
+            [
+                "1b1dd78d94f068cb"
+            ]
+        ]
+    },
+    {
+        "id": "1b1dd78d94f068cb",
+        "type": "function",
+        "z": "a899d0f418c38120",
+        "name": "apply rollout command",
+        "func": "// Rollout commands from the Fleet instance: {action:'deploy', version, units:[..]}\nconst units = global.get('sim_units');\nconst { action, version, units: targets } = msg.payload || {};\nif (action !== 'deploy' || !version || !Array.isArray(targets)) return null;\nlet n = 0;\nfor (const id of targets) {\n    const u = units[id];\n    if (!u || u.version === version) continue;\n    u.pending = { version, landAt: 0 };\n    n++;\n}\nnode.status({ fill: 'blue', shape: 'dot', text: `${version} -> ${n} units` });\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7ec7014336b21123",
+        "type": "ui-template",
+        "z": "f9389eb0cdeffb1b",
+        "group": "ce79bb6579612d88",
+        "page": "",
+        "ui": "",
+        "name": "presenter controls",
+        "order": 1,
+        "width": "12",
+        "height": "0",
+        "head": "",
+        "format": "<template>\n  <div class=\"panel\">\n    <section>\n      <h3><span class=\"tag edge\">EDGE</span> Plant floor</h3>\n      <button class=\"bad\" @click=\"send({payload:{action:'jam_p07'}})\">Jam Plant 7 capper (fault 2104)</button>\n      <button class=\"warn\" @click=\"send({payload:{action:'starve_p03'}})\">Starve Plant 3 (45 s)</button>\n      <button class=\"ok\" @click=\"send({payload:{action:'clear_plants'}})\">Clear all plant faults</button>\n    </section>\n    <section>\n      <h3><span class=\"tag hub\">HUB</span> Enterprise</h3>\n      <button @click=\"send({payload:{action:'burst'}})\">Send order burst (10 IDocs)</button>\n      <button class=\"warn\" @click=\"send({payload:{action:'malformed'}})\">Send malformed IDoc</button>\n      <button class=\"bad\" @click=\"send({payload:{action:'3pl_down'}})\">Take 3PL API down (503)</button>\n      <button class=\"ok\" @click=\"send({payload:{action:'3pl_up'}})\">Restore 3PL API</button>\n    </section>\n    <section>\n      <h3><span class=\"tag fleet\">FLEET</span> Field</h3>\n      <button class=\"bad\" @click=\"send({payload:{action:'fu009_off'}})\">Knock FU-009 off cellular</button>\n      <button class=\"ok\" @click=\"send({payload:{action:'fu009_on'}})\">Bring FU-009 back</button>\n      <button @click=\"send({payload:{action:'reset_fleet'}})\">Reset fleet to v2.3.0 (pre-show)</button>\n    </section>\n  </div>\n</template>\n<style scoped>\n.panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }\nsection { background: #fff; border: 1px solid #E4E4EC; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }\nh3 { margin: 0 0 4px; font-size: 15px; display: flex; gap: 8px; align-items: center; }\n.tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: #fff; letter-spacing: .04em; }\n.edge { background: #0EA5E9; } .hub { background: #4338CA; } .fleet { background: #10B981; }\nbutton { text-align: left; padding: 10px 12px; border-radius: 8px; border: 1px solid #D4D4DE; background: #F8F8FB; cursor: pointer; font-size: 14px; }\nbutton:hover { background: #EEF; }\nbutton.bad { border-color: #FCA5A5; background: #FEF2F2; }\nbutton.warn { border-color: #FCD34D; background: #FFFBEB; }\nbutton.ok { border-color: #86EFAC; background: #F0FDF4; }\n</style>\n",
+        "storeOutMessages": true,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "f5f8f9f3b1847e34"
+            ]
+        ]
+    },
+    {
+        "id": "f5f8f9f3b1847e34",
+        "type": "function",
+        "z": "f9389eb0cdeffb1b",
+        "name": "presenter action",
+        "func": "// One switch for every presenter action.\nconst a = msg.payload && msg.payload.action;\nconst plants = global.get('sim_plants') || {};\nconst units = global.get('sim_units') || {};\nconst log = s => node.status({ fill: 'green', shape: 'dot', text: s });\nswitch (a) {\n    case 'jam_p07': if (plants.P07) plants.P07.forced = 'jam'; log('Plant 7 jammed'); break;\n    case 'starve_p03': if (plants.P03) plants.P03.forced = 'starve'; log('Plant 3 starved'); break;\n    case 'clear_plants': Object.values(plants).forEach(p => { p.state = 1; p.fault = 0; p.idleUntil = 0; }); log('plants cleared'); break;\n    case 'burst': log('order burst'); return [{ topic: 'burst' }, null];\n    case 'malformed': log('malformed IDoc'); return [{ topic: 'malformed' }, null];\n    case '3pl_down': global.set('sim_3pl_down', true); log('3PL down'); break;\n    case '3pl_up': global.set('sim_3pl_down', false); log('3PL up'); break;\n    case 'fu009_off': if (units['FU-009']) units['FU-009'].forcedOffline = true; log('FU-009 offline'); break;\n    case 'fu009_on': if (units['FU-009']) units['FU-009'].forcedOffline = false; log('FU-009 online'); break;\n    case 'reset_fleet':\n        Object.values(units).forEach(u => { u.version = 'v2.3.0'; u.pending = null; u.forcedOffline = false; u.offlineUntil = 0; });\n        log('fleet reset to v2.3.0'); break;\n    default: return null;\n}\nreturn [null, null];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            [
+                "b549b09eb81db66e"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "b549b09eb81db66e",
+        "type": "link out",
+        "z": "f9389eb0cdeffb1b",
+        "name": "to IDoc generator",
+        "mode": "link",
+        "links": [
+            "1a8cb62b3966eb8b"
+        ],
+        "x": 660,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "8992cea234683edb",
+        "type": "inject",
+        "z": "f9389eb0cdeffb1b",
+        "name": "every 2 s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "2",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 240,
+        "wires": [
+            [
+                "7113c026da56571e"
+            ]
+        ]
+    },
+    {
+        "id": "7113c026da56571e",
+        "type": "function",
+        "z": "f9389eb0cdeffb1b",
+        "name": "sim state",
+        "func": "const plants = global.get('sim_plants') || {};\nconst units = Object.values(global.get('sim_units') || {});\nconst S = { 0: 'STOPPED', 1: 'RUNNING', 2: 'IDLE', 3: 'FAULTED' };\nreturn { payload: {\n    plants: Object.values(plants).map(p => ({ site: p.site, state: S[p.state], speed: Math.round(p.speed), fault: p.fault, map: p.map })),\n    tpl: global.get('sim_3pl_down') ? 'DOWN' : 'UP',\n    tplCalls: global.get('sim_3pl_calls') || 0,\n    idocs: global.get('sim_idocs_sent') || 0,\n    online: units.filter(u => !u.forcedOffline && !u.offlineUntil).length,\n    total: units.length,\n    versions: units.reduce((m, u) => (m[u.version] = (m[u.version] || 0) + 1, m), {}),\n    pending: units.filter(u => u.pending).length,\n} };\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 240,
+        "wires": [
+            [
+                "f7b5b88e682db65f"
+            ]
+        ]
+    },
+    {
+        "id": "f7b5b88e682db65f",
+        "type": "ui-template",
+        "z": "f9389eb0cdeffb1b",
+        "group": "fb5a46766817abc5",
+        "page": "",
+        "ui": "",
+        "name": "live state",
+        "order": 1,
+        "width": "12",
+        "height": "0",
+        "head": "",
+        "format": "<template>\n  <div class=\"state\" v-if=\"msg?.payload\">\n    <div class=\"card\" v-for=\"p in msg.payload.plants\" :key=\"p.site\">\n      <div class=\"k\">{{ p.site }} <small>{{ p.map }}</small></div>\n      <div :class=\"['v', p.state]\">{{ p.state }}</div>\n      <div class=\"s\">{{ p.speed }} bpm · fault {{ p.fault || '-' }}</div>\n    </div>\n    <div class=\"card\"><div class=\"k\">3PL API</div><div :class=\"['v', msg.payload.tpl === 'UP' ? 'RUNNING' : 'FAULTED']\">{{ msg.payload.tpl }}</div><div class=\"s\">{{ msg.payload.tplCalls }} calls · {{ msg.payload.idocs }} IDocs sent</div></div>\n    <div class=\"card\"><div class=\"k\">Field units</div><div class=\"v\">{{ msg.payload.online }}/{{ msg.payload.total }} online</div>\n      <div class=\"s\"><span v-for=\"(n, v) in msg.payload.versions\" :key=\"v\">{{ v }}: {{ n }}&nbsp; </span><span v-if=\"msg.payload.pending\">· {{ msg.payload.pending }} updating</span></div></div>\n  </div>\n</template>\n<style scoped>\n.state { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }\n.card { border: 1px solid #E4E4EC; border-radius: 10px; padding: 12px; background: #fff; }\n.k { font-size: 12px; color: #6B6B80; font-weight: 600; } .k small { font-weight: 400; }\n.v { font-size: 20px; font-weight: 700; margin: 4px 0; }\n.v.RUNNING { color: #059669; } .v.IDLE { color: #D97706; } .v.FAULTED { color: #DC2626; } .v.STOPPED { color: #6B7280; }\n.s { font-size: 12px; color: #6B6B80; }\n</style>\n",
+        "storeOutMessages": true,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 660,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f9f943b37c4015e0",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.32.0",
+            "@flowfuse/nr-project-nodes": "0.7.9"
+        }
+    }
+]
